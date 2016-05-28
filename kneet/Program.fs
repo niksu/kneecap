@@ -75,7 +75,7 @@ let main argv =
     let x = ip.assertion ()
 
     generate_timed_pcap_contents eth 1000u (fun (p : packet) -> ignore(p.constrain_different()))
-    |> pcap.serialise_pcap @"X:\stack_6_1000.pcap"
+    |> pcap.serialise_pcap @"stack_6_1000.pcap"
 
     printfn "%A" argv
     0 // return an integer exit code
