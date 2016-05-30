@@ -8,7 +8,7 @@ More details at the <a href="http://www.cl.cam.ac.uk/~ns441/kneecap/">website.</
 ## Building
 I ran this on Ubuntu 14, but the process should be similar on other systems.
 
-Let `$KNEECAP_DIR` be the path of your Kneecap clone.
+Let `$KNEECAP_DIR` be the path of your Kneecap repo clone.
 
 1) Get a Z3 release from https://github.com/Z3Prover/z3/releases and build it.
 ```
