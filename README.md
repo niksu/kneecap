@@ -39,6 +39,7 @@ cd ${KNEECAP_DIR}
 
 ## Running
 `$ MONO_PATH=${MONO_PATH}:${KNEECAP_DIR}/kneecap/ mono ${KNEECAP_DIR}/kneet/kneet.exe`
+
 You should see a list of numbers counting up to a thousand, at the end of which
 the program will terminate. Each of the numbers corresponded to a packet being
 generated, which was recorded in a .pcap file in your directory.
