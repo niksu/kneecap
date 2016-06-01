@@ -20,6 +20,7 @@ cd build; make
 > **Note**: On OSX I gave the `--x86` command-line flag to `./configure`, since
 > for some reason the version of Mono I'm using expected Z3's DLL to be compiled
 > for 32.bit
+
 2) Build the managed wrapper to Z3.
 ```
 cd ../src/api/dotnet
