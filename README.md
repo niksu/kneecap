@@ -6,7 +6,7 @@ More details at the <a href="http://www.cl.cam.ac.uk/~ns441/kneecap/">website.</
 * Mono runtime and F# compiler.
 
 ## Building
-I ran this on Ubuntu 14, but the process should be similar on other systems.
+I ran this on Ubuntu 14 (using Mono 3.2.8) and OSX 10.10.5 (using Mono 3.8.0), but the process should be similar on other systems.
 
 Let `$KNEECAP_DIR` be the path of your Kneecap repo clone.
 
@@ -17,6 +17,9 @@ export Z3_DIR=`pwd`
 ./configure
 cd build; make
 ```
+> **Note**: On OSX I gave the `--x86` command-line flag to `./configure`, since
+> for some reason the version of Mono I'm using expected Z3's DLL to be compiled
+> for 32.bit
 2) Build the managed wrapper to Z3.
 ```
 cd ../src/api/dotnet
@@ -34,4 +37,13 @@ cd ${KNEECAP_DIR}
 ```
 
 ## Running
-MONO_PATH=${MONO_PATH}:${KNEECAP_DIR}/kneecap/ mono ${KNEECAP_DIR}/kneet/kneet.exe
+`$ MONO_PATH=${MONO_PATH}:${KNEECAP_DIR}/kneecap/ mono ${KNEECAP_DIR}/kneet/kneet.exe`
+You should see a list of numbers counting up to a thousand, at the end of which
+the program will terminate. Each of the numbers corresponded to a packet being
+generated, which was recorded in a .pcap file in your directory.
+
+## Problems?
+Mono might complain that it cannot find certain files. Sometimes such error messages
+can be misleading: Mono *can* find the files, but they don't contain what it
+expected to find. Set `MONO_LOG_LEVEL=debug` in your environment to have Mono
+tell you more.
