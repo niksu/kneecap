@@ -1,12 +1,26 @@
 ![Kneecap](http://www.cl.cam.ac.uk/~ns441/kneecap/small_kneecap.jpg)
 
-Kneecap enables you to generates network packets from a high-level logical spec.
+Kneecap enables you to generate network packets from a high-level logical spec such as this [example](https://github.com/niksu/kneecap/blob/master/kneet/Program.fs#L35):
+```fsharp
+eth.constrain <@ ethernet.source_address = ethernet.mac_address "[1-5,10]:34:56:78:90:*" &&
+                     ethernet.ethertype = ethernet.ethertype_ipv4 @>
+    <== ip.constrain <@@ ipv4.version = 4 &&
+                         ipv4.source_address = ipv4.ipv4_address "10.10.10.[55-60]" &&
+                         ipv4.source_address = ipv4.destination_address &&
+                         ipv4.internet_header_length = 5 &&
+                         ipv4.total_length = 170 &&
+                         ipv4.TTL = 5 &&
+                         ipv4.protocol = ipv4.protocol_ip_in_ip
+                         (*ipv4.source_address < ipv4.destination_address*)
+                      @@>
+```
+This example encapsulates an IPv4 packet inside an Ethernet frame, and specifies constraints on both layers.
 This spec is translated into bitvector constraints that are given to an SMT solver.
 Solutions then correspond to network packets.
 You can find out more by reading the [paper](http://www.cl.cam.ac.uk/~ns441/files/kneecap_smt16.pdf).
 
 ## Example output
-Kneecap provides an API for generating packets. It comes with a sample program that
+Kneecap provides an API for generating packets. It comes with a [sample program](https://github.com/niksu/kneecap/blob/master/kneet/Program.fs) that
 generates packets using Kneecap, then saves them in the
 [pcap](https://en.wikipedia.org/wiki/Pcap) [file format](https://wiki.wireshark.org/Development/LibpcapFileFormat).
 You can view these files' contents using [Wireshark](https://www.wireshark.org/)
