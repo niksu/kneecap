@@ -3,7 +3,7 @@
 Kneecap enables you to generates network packets from a high-level logical spec.
 This spec is translated into bitvector constraints that are given to an SMT solver.
 Solutions then correspond to network packets.
-You can find out more by reading [paper](http://www.cl.cam.ac.uk/~ns441/files/kneecap_smt16.pdf).
+You can find out more by reading the [paper](http://www.cl.cam.ac.uk/~ns441/files/kneecap_smt16.pdf).
 
 ## Example output
 Kneecap provides an API for generating packets. It comes with a sample program that
