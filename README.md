@@ -14,18 +14,18 @@ eth.constrain <@ ethernet.source_address = ethernet.mac_address "[1-5,10]:34:56:
                          (*ipv4.source_address < ipv4.destination_address*)
                       @@>
 ```
-This example encapsulates an IPv4 packet inside an Ethernet frame, and specifies constraints on both layers.
+This example describes an IPv4 packet encapsulated inside an Ethernet frame, and specifies constraints on both layers.
 This spec is translated into bitvector constraints that are given to an SMT solver.
-Solutions then correspond to network packets.
+Solutions returned by the solver correspond to network packets.
 You can find out more by reading the [paper](http://www.cl.cam.ac.uk/~ns441/files/kneecap_smt16.pdf).
 
 ## Example output
 Kneecap provides an API for generating packets. It comes with a [sample program](https://github.com/niksu/kneecap/blob/master/kneet/Program.fs) that
-generates packets using Kneecap, then saves them in the
+generates packets using Kneecap and then saves them in the
 [pcap](https://en.wikipedia.org/wiki/Pcap) [file format](https://wiki.wireshark.org/Development/LibpcapFileFormat).
-You can view these files' contents using [Wireshark](https://www.wireshark.org/)
-or [command-line tools](http://serverfault.com/questions/38626/how-can-i-read-pcap-files-in-a-friendly-format).
-This section contains example output from this sample program.
+You can view these files' contents using tools like [Wireshark](https://www.wireshark.org/)
+or various [others](http://serverfault.com/questions/38626/how-can-i-read-pcap-files-in-a-friendly-format).
+This section contains example output files from this sample program.
 
 ### 64-byte Ethernet packets, in batches of 1000
 * [ethernet_64_1.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_64_1.pcap)
