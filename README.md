@@ -1,7 +1,32 @@
 ![Kneecap](http://www.cl.cam.ac.uk/~ns441/kneecap/small_kneecap.jpg)
 
-Kneecap enables you to generates pcap files from a high-level logical spec.
-More details at the <a href="http://www.cl.cam.ac.uk/~ns441/kneecap/">website.</a>
+Kneecap enables you to generates network packets from a high-level logical spec.
+This spec is translated into bitvector constraints that are given to an SMT solver.
+Solutions then correspond to network packets.
+You can find out more by reading [paper](http://www.cl.cam.ac.uk/~ns441/files/kneecap_smt16.pdf).
+
+## Example output
+Kneecap provides an API for generating packets. It comes with a sample program that
+generates packets using Kneecap, then saves them in the
+[pcap](https://en.wikipedia.org/wiki/Pcap) [file format](https://wiki.wireshark.org/Development/LibpcapFileFormat).
+You can view these files' contents using [Wireshark](https://www.wireshark.org/)
+or [command-line tools](http://serverfault.com/questions/38626/how-can-i-read-pcap-files-in-a-friendly-format).
+This section contains example output from this sample program.
+
+### 64-byte Ethernet packets, in batches of 1000
+* [ethernet_64_1.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_64_1.pcap)
+* [ethernet_64_2.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_64_2.pcap)
+* [ethernet_64_3.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_64_3.pcap)
+* [ethernet_64_4.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_64_4.pcap)
+
+### 584-byte Ethernet packets, in batches of 1000
+* [ethernet_584_1.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_584_1.pcap)
+* [ethernet_584_2.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_584_2.pcap)
+* [ethernet_584_3.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_584_3.pcap)
+* [ethernet_584_4.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_584_4.pcap)
+
+### 1000 packets containing six stacked protocols, described in the paper
+* [stack_6_1000.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/stack_6_1000.pcap)
 
 ## Dependencies
 * Z3 (version 4.x). Download the source from <a href="https://github.com/Z3Prover/z3/releases">Z3's release archive</a>.
