@@ -1,12 +1,9 @@
-﻿(*
+(*
    Copyright 2015 Nik Sultana
-
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
-
        http://www.apache.org/licenses/LICENSE-2.0
-
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,7 +42,7 @@ let default_global_header =
     network = data_link_type.Ethernet;
   }
 
-(*Fixed-size 16-byte header preceding a variable-length packet*) 
+(*Fixed-size 16-byte header preceding a variable-length packet*)
 type header =
   {  ts_sec : uint32;
      ts_usec : uint32;
@@ -135,7 +132,7 @@ let deserialise_pcap (filepath : string) : pcap_file_contents =
                   match System.BitConverter.ToUInt32(buffer, 0) with
                   | 0xa1b2c3d4u -> magic_code.Big_Endian
                   | 0xd4c3b2a1u -> magic_code.Little_Endian
-                  | _ -> failwith "Unrecognised magic number" }}
+                  | n -> failwith ("Unrecognised magic number:" ^ string n)}}
 
   assert (fd.Read(buffer, 0, sizeof<uint16>) = 2)
   pcap_contents <-
@@ -143,7 +140,7 @@ let deserialise_pcap (filepath : string) : pcap_file_contents =
       with global_header =
            { pcap_contents.global_header
              with version_major = System.BitConverter.ToUInt16(buffer, 0) }}
-    
+
   assert (fd.Read(buffer, 0, sizeof<uint16>) = 2)
   pcap_contents <-
     { pcap_contents
@@ -165,18 +162,28 @@ let deserialise_pcap (filepath : string) : pcap_file_contents =
            { pcap_contents.global_header
              with sigfigs = System.BitConverter.ToUInt32(buffer, 0) }}
 
-  assert (fd.Read(buffer, 0, sizeof<uint32>) = 32)
+  assert (fd.Read(buffer, 0, sizeof<uint32>) = 4)
   pcap_contents <-
     { pcap_contents
       with global_header =
            { pcap_contents.global_header
              with snaplen = System.BitConverter.ToUInt32(buffer, 0) }}
 
+  assert (fd.Read(buffer, 0, sizeof<uint32>) = 4)
+(* FIXME check ad store data_link_type
+  pcap_contents <-
+    { pcap_contents
+      with global_header =
+           { pcap_contents.global_header
+             with network = data_link_type (System.BitConverter.ToUInt32(buffer, 0)) }}
+*)
+
   (*Buffer is now large enough to hold the header + maximum packet size*)
-  let buffer = Array.create (int pcap_contents.global_header.snaplen + 20(*FIXME not needed, since header and packet not stored in buffer simultaneously*)) (byte 0)
+  let buffer = Array.create (int pcap_contents.global_header.snaplen +
+    20(*FIXME not needed, since header and packet not stored in buffer simultaneously*)) (byte 0)
 
   (*Header preceding a packet is always 20 bytes long*)
-  while (fd.Read(buffer, 0, 20) = 20) do
+  while (fd.Read(buffer, 0, 16) = 16) do
     let packet_header =
       { ts_sec = System.BitConverter.ToUInt32(buffer, 0);
         ts_usec = System.BitConverter.ToUInt32(buffer, 4);
@@ -184,6 +191,12 @@ let deserialise_pcap (filepath : string) : pcap_file_contents =
         orig_len = System.BitConverter.ToUInt32(buffer, 12) }
 
     let packet_data =
+(* FIXME debug code
+      printfn "ts_sec %d" packet_header.ts_sec
+      printfn "ts_usec %d" packet_header.ts_usec
+      printfn "orig_len %d" packet_header.orig_len
+      printfn "reading packet of len %d" packet_header.incl_len
+*)
       assert (fd.Read(buffer, 0, int packet_header.incl_len) = int packet_header.incl_len)
       let store = Array.create (int32 packet_header.incl_len) (byte 0)
       System.Buffer.BlockCopy(buffer, 0, store, 0, int32 packet_header.incl_len)
