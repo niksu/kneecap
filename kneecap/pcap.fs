@@ -11,6 +11,10 @@
    limitations under the License.
 *)
 
+(* FIXME use of 'assert' in this module requires DEBUG to be set at compile
+         time. should refactor for the parameter to 'assert' to have an effect
+         even if the assertion isn't actually being checked.*)
+
 module pcap
 
 type magic_code =
