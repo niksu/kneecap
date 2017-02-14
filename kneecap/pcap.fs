@@ -174,13 +174,15 @@ let deserialise_pcap (filepath : string) : pcap_file_contents =
              with snaplen = System.BitConverter.ToUInt32(buffer, 0) }}
 
   assert (fd.Read(buffer, 0, sizeof<uint32>) = 4)
-(* FIXME check ad store data_link_type
   pcap_contents <-
     { pcap_contents
       with global_header =
            { pcap_contents.global_header
-             with network = data_link_type (System.BitConverter.ToUInt32(buffer, 0)) }}
-*)
+             with network =
+               match System.BitConverter.ToUInt32(buffer, 0) with
+               | 1u -> data_link_type.Ethernet
+               | n -> failwith ("Unrecognised data_link_type value: " + string n)
+           }}
 
   (*Buffer is now large enough to hold the header + maximum packet size*)
   let buffer = Array.create (int pcap_contents.global_header.snaplen +
