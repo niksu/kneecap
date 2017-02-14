@@ -136,7 +136,7 @@ let deserialise_pcap (filepath : string) : pcap_file_contents =
                   match System.BitConverter.ToUInt32(buffer, 0) with
                   | 0xa1b2c3d4u -> magic_code.Big_Endian
                   | 0xd4c3b2a1u -> magic_code.Little_Endian
-                  | n -> failwith ("Unrecognised magic number:" ^ string n)}}
+                  | n -> failwith ("Unrecognised magic number:" + string n)}}
 
   assert (fd.Read(buffer, 0, sizeof<uint16>) = 2)
   pcap_contents <-
@@ -179,14 +179,13 @@ let deserialise_pcap (filepath : string) : pcap_file_contents =
       with global_header =
            { pcap_contents.global_header
              with network =
-               match System.BitConverter.ToUInt32(buffer, 0) with
-               | 1u -> data_link_type.Ethernet
-               | n -> failwith ("Unrecognised data_link_type value: " + string n)
+                    match System.BitConverter.ToUInt32(buffer, 0) with
+                    | 1u -> data_link_type.Ethernet
+                    | n -> failwith ("Unrecognised data_link_type value: " + string n)
            }}
 
   (*Buffer is now large enough to hold the header + maximum packet size*)
-  let buffer = Array.create (int pcap_contents.global_header.snaplen +
-    20(*FIXME not needed, since header and packet not stored in buffer simultaneously*)) (byte 0)
+  let buffer = Array.create (int pcap_contents.global_header.snaplen + 20(*FIXME not needed, since header and packet not stored in buffer simultaneously*)) (byte 0)
 
   (*Header preceding a packet is always 20 bytes long*)
   while (fd.Read(buffer, 0, 16) = 16) do
