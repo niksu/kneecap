@@ -11,11 +11,12 @@
    limitations under the License.
 *)
 
-(* FIXME use of 'assert' in this module requires DEBUG to be set at compile
-         time. should refactor for the parameter to 'assert' to have an effect
-         even if the assertion isn't actually being checked.*)
-
 module pcap
+
+(* NOTE this ensures that any side-effects involves in evaluating b actually
+        take place, since use of 'assert' requires DEBUG to be set at compile
+        time for assert's parameter (invluding its side-effects) to be evaluated.*)
+let assert_check (b : bool) = assert b
 
 type magic_code =
   | Big_Endian    = 0xa1b2c3d4u
@@ -127,7 +128,7 @@ let deserialise_pcap (filepath : string) : pcap_file_contents =
           stored in the buffer simultaneously, as currently implemented.*)
   let buffer = Array.create (24) (byte 0)
 
-  assert (fd.Read(buffer, 0, sizeof<uint32>) = 4)
+  assert_check (fd.Read(buffer, 0, sizeof<uint32>) = 4)
   pcap_contents <-
     { pcap_contents
       with global_header =
@@ -136,55 +137,56 @@ let deserialise_pcap (filepath : string) : pcap_file_contents =
                   match System.BitConverter.ToUInt32(buffer, 0) with
                   | 0xa1b2c3d4u -> magic_code.Big_Endian
                   | 0xd4c3b2a1u -> magic_code.Little_Endian
-                  | n -> failwith ("Unrecognised magic number:" ^ string n)}}
+                  | n -> failwith ("Unrecognised magic number:" + string n)}}
 
-  assert (fd.Read(buffer, 0, sizeof<uint16>) = 2)
+  assert_check (fd.Read(buffer, 0, sizeof<uint16>) = 2)
   pcap_contents <-
     { pcap_contents
       with global_header =
            { pcap_contents.global_header
              with version_major = System.BitConverter.ToUInt16(buffer, 0) }}
 
-  assert (fd.Read(buffer, 0, sizeof<uint16>) = 2)
+  assert_check (fd.Read(buffer, 0, sizeof<uint16>) = 2)
   pcap_contents <-
     { pcap_contents
       with global_header =
            { pcap_contents.global_header
              with version_minor = System.BitConverter.ToUInt16(buffer, 0) }}
 
-  assert (fd.Read(buffer, 0, sizeof<int32>) = 4)
+  assert_check (fd.Read(buffer, 0, sizeof<int32>) = 4)
   pcap_contents <-
     { pcap_contents
       with global_header =
            { pcap_contents.global_header
              with thiszone = System.BitConverter.ToInt32(buffer, 0) }}
 
-  assert (fd.Read(buffer, 0, sizeof<uint32>) = 4)
+  assert_check (fd.Read(buffer, 0, sizeof<uint32>) = 4)
   pcap_contents <-
     { pcap_contents
       with global_header =
            { pcap_contents.global_header
              with sigfigs = System.BitConverter.ToUInt32(buffer, 0) }}
 
-  assert (fd.Read(buffer, 0, sizeof<uint32>) = 4)
+  assert_check (fd.Read(buffer, 0, sizeof<uint32>) = 4)
   pcap_contents <-
     { pcap_contents
       with global_header =
            { pcap_contents.global_header
              with snaplen = System.BitConverter.ToUInt32(buffer, 0) }}
 
-  assert (fd.Read(buffer, 0, sizeof<uint32>) = 4)
-(* FIXME check ad store data_link_type
+  assert_check (fd.Read(buffer, 0, sizeof<uint32>) = 4)
   pcap_contents <-
     { pcap_contents
       with global_header =
            { pcap_contents.global_header
-             with network = data_link_type (System.BitConverter.ToUInt32(buffer, 0)) }}
-*)
+             with network =
+                    match System.BitConverter.ToUInt32(buffer, 0) with
+                    | 1u -> data_link_type.Ethernet
+                    | n -> failwith ("Unrecognised data_link_type value: " + string n)
+           }}
 
   (*Buffer is now large enough to hold the header + maximum packet size*)
-  let buffer = Array.create (int pcap_contents.global_header.snaplen +
-    20(*FIXME not needed, since header and packet not stored in buffer simultaneously*)) (byte 0)
+  let buffer = Array.create (int pcap_contents.global_header.snaplen + 20(*FIXME not needed, since header and packet not stored in buffer simultaneously*)) (byte 0)
 
   (*Header preceding a packet is always 20 bytes long*)
   while (fd.Read(buffer, 0, 16) = 16) do
@@ -201,7 +203,7 @@ let deserialise_pcap (filepath : string) : pcap_file_contents =
       printfn "orig_len %d" packet_header.orig_len
       printfn "reading packet of len %d" packet_header.incl_len
 *)
-      assert (fd.Read(buffer, 0, int packet_header.incl_len) = int packet_header.incl_len)
+      assert_check (fd.Read(buffer, 0, int packet_header.incl_len) = int packet_header.incl_len)
       let store = Array.create (int32 packet_header.incl_len) (byte 0)
       System.Buffer.BlockCopy(buffer, 0, store, 0, int32 packet_header.incl_len)
       store
