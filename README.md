@@ -1,4 +1,4 @@
-![Kneecap](http://www.cl.cam.ac.uk/~ns441/kneecap/small_kneecap.jpg)
+![Kneecap](https://www.nik.network/kneecap/small_kneecap.jpg)
 
 Kneecap enables you to generate network packets from a high-level logical spec such as this [example](https://github.com/niksu/kneecap/blob/master/kneet/Program.fs#L35):
 ```fsharp
@@ -17,7 +17,7 @@ eth.constrain <@ ethernet.source_address = ethernet.mac_address "[1-5,10]:34:56:
 This example describes an IPv4 packet encapsulated inside an Ethernet frame, and specifies constraints on both layers.
 This spec is translated into bitvector constraints that are given to an SMT solver.
 Solutions returned by the solver correspond to network packets.
-You can find out more by reading the [paper](http://www.cl.cam.ac.uk/~ns441/files/kneecap_smt16.pdf).
+You can find out more by reading the [paper](https://www.nik.network/cucl/files/kneecap_smt16.pdf).
 
 ## Example output
 Kneecap provides an API for generating packets. It comes with a [sample program](https://github.com/niksu/kneecap/blob/master/kneet/Program.fs) that
@@ -28,19 +28,19 @@ or various [others](http://serverfault.com/questions/38626/how-can-i-read-pcap-f
 This section contains example output files from this sample program.
 
 ### 64-byte Ethernet packets, in batches of 1000
-* [ethernet_64_1.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_64_1.pcap)
-* [ethernet_64_2.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_64_2.pcap)
-* [ethernet_64_3.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_64_3.pcap)
-* [ethernet_64_4.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_64_4.pcap)
+* [ethernet_64_1.pcap](https://www.nik.network/kneecap/ethernet_64_1.pcap)
+* [ethernet_64_2.pcap](https://www.nik.network/kneecap/ethernet_64_2.pcap)
+* [ethernet_64_3.pcap](https://www.nik.network/kneecap/ethernet_64_3.pcap)
+* [ethernet_64_4.pcap](https://www.nik.network/kneecap/ethernet_64_4.pcap)
 
 ### 584-byte Ethernet packets, in batches of 1000
-* [ethernet_584_1.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_584_1.pcap)
-* [ethernet_584_2.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_584_2.pcap)
-* [ethernet_584_3.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_584_3.pcap)
-* [ethernet_584_4.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/ethernet_584_4.pcap)
+* [ethernet_584_1.pcap](https://www.nik.network/kneecap/ethernet_584_1.pcap)
+* [ethernet_584_2.pcap](https://www.nik.network/kneecap/ethernet_584_2.pcap)
+* [ethernet_584_3.pcap](https://www.nik.network/kneecap/ethernet_584_3.pcap)
+* [ethernet_584_4.pcap](https://www.nik.network/kneecap/ethernet_584_4.pcap)
 
 ### 1000 packets containing six stacked protocols, described in the paper
-* [stack_6_1000.pcap](http://www.cl.cam.ac.uk/~ns441/kneecap/stack_6_1000.pcap)
+* [stack_6_1000.pcap](https://www.nik.network/kneecap/stack_6_1000.pcap)
 
 ## Dependencies
 * Z3 (version 4.x). Download the source from <a href="https://github.com/Z3Prover/z3/releases">Z3's release archive</a>.
