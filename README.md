@@ -1,4 +1,4 @@
-![Kneecap](https://www.nik.network/kneecap/small_kneecap.jpg)
+![Kneecap](doc/small_kneecap.jpg)
 
 Kneecap enables you to generate network packets from a high-level logical spec such as this [example](https://github.com/niksu/kneecap/blob/master/kneet/Program.fs#L35):
 ```fsharp
