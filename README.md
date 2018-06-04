@@ -75,7 +75,7 @@ cp ${Z3_DIR}/build/libz3* ${KNEECAP_DIR}/kneecap
 4) Build Kneecap
 ```
 cd ${KNEECAP_DIR}
-./build.sh
+make
 ```
 
 ## Running
