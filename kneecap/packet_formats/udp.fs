@@ -144,7 +144,7 @@ type udp (pdu_in_bytes : uint32) =
   (*Placeholder for packet fields*)
   static member payload (*: packet_constant*) = failwith "This value should not be evaluated by F#"
 
-  static member source_port (*: packet_constant*) = failwith "This value should not be evaluated by F#"
-  static member destination_port (*: packet_constant*) = failwith "This value should not be evaluated by F#"
+  static member source_port : int (*: packet_constant*) = failwith "This value should not be evaluated by F#"
+  static member destination_port : int (*: packet_constant*) = failwith "This value should not be evaluated by F#"
   static member length (*: packet_constant*) = failwith "This value should not be evaluated by F#"
   static member checksum (*: packet_constant*) = failwith "This value should not be evaluated by F#"
