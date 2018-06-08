@@ -65,17 +65,16 @@ cd build; make
 2) Build the managed wrapper to Z3.
 ```
 cd ../src/api/dotnet
-xbuild Microsoft.Z3.csproj
+msbuild Microsoft.Z3.csproj
 ```
 3) We will use Z3 to build Kneecap. Copy files over.
 ```
-cp ${Z3_DIR}/src/api/dotnet/obj/Debug/Microsoft.Z3.dll ${KNEECAP_DIR}/kneecap
-cp ${Z3_DIR}/build/libz3* ${KNEECAP_DIR}/kneecap
+cp ${Z3_DIR}/src/api/dotnet/obj/Debug/Microsoft.Z3.dll ${KNEECAP_DIR}
 ```
 4) Build Kneecap
 ```
 cd ${KNEECAP_DIR}
-make
+msbuild kneecap.sln
 ```
 
 ## Running
