@@ -310,7 +310,7 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
          match this.encapsulated_packet with
          | None -> base.extract_field_value field
          | Some (pckt : packet) ->
-            pckt.generate ()
+            ignore(pckt.generate ())
             pckt.extract_packet ()
       | _ -> base.extract_field_value field
 

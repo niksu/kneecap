@@ -130,7 +130,7 @@ type tcp (pdu_in_bytes : uint32) =
          match this.encapsulated_packet with
          | None -> base.extract_field_value field
          | Some (pckt : packet) ->
-            pckt.generate ()
+            ignore(pckt.generate ())
             pckt.extract_packet ()
       | _ -> base.extract_field_value field
 
