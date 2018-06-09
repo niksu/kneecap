@@ -367,4 +367,5 @@ let (+==) (p1 : payload_carrier) (p2s : payload_carrier list) =
   List.fold (fun (acc : payload_carrier) (p : payload_carrier) ->
     acc <== p
     p) p1 p2s
+    |> ignore
   ()
