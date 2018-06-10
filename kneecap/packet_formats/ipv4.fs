@@ -258,7 +258,7 @@ type ipv4 (pdu_in_bytes : uint32) =
         List.map Option.get raw_field_extracts
         |> Array.concat
       if Array.length bytes * 8 > int this.packet_size then
-        failwith "Output packet size exceeded PDU size"
+        failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
       Some bytes
 
   (*FIXME obtain value for payload from encapsulated packets*)
