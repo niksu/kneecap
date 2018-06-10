@@ -91,14 +91,15 @@ type packet () =
   (*Try to add a constraint to the solver so that the next (and subsequent)
     invocation of "generate" will return a different packet from the current solution.
     Return true iff this could be done.*)
-  abstract constrain_different : unit -> bool
-  default this.constrain_different () : bool =
+  member this.constrain_different_flat () : bool =
     match model with
     | None -> false
     | Some mdl ->
-      let w = extract_raw_witness mdl this.packet_bv
+      let w = extract_raw_witness mdl this.packet_bv (*FIXME does extract_raw_witness also include a potential payload? If yes then we're overlapping with "override this.constrain_different" below*)
       slv.Assert (ctxt.MkNot (ctxt.MkEq (this.packet_bv, w)))
       true
+  abstract constrain_different : unit -> bool
+  default this.constrain_different () = this.constrain_different_flat ()
 
   (*Protocol specific fields, constants, and interpretation*)
   abstract distinguished_constants : distinguish_constant list
@@ -215,15 +216,11 @@ and [<AbstractClass>] payload_carrier () =
     match this.solution with
     | None -> false
     | Some mdl ->
-      let slv = this.solver
-      let ctxt = this.context
-      let w = extract_raw_witness mdl this.packet_bv
-      slv.Assert (ctxt.MkNot (ctxt.MkEq (this.packet_bv, w)))
       let constrain_different_payload =
         match carrying with
         | None -> true
         | Some pckt -> pckt.constrain_different ()
-      true && constrain_different_payload
+      this.constrain_different_flat () && constrain_different_payload
 
 
 (*Independent of all packets, we have theory-interpreted symbols (=, <, 4, etc).
