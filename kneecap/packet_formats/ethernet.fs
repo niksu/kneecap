@@ -260,7 +260,7 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
     (It could, but I don't do that.)*)
   override this.packet_bv =
     let frame_bv =
-      concat_bvs this.context [dst_mac_bv; src_mac_bv; ethertype_bv; payload_bv; crc32_bv]
+      concat_bvs this.context [dst_mac_bv; src_mac_bv; ethertype_bv; payload_bv] // NOTE excluding crc32_bv since it's calculated rather than generated, and this this.packet_bv is used to generate packets, the solver might be changing irrelevant parts of the packet.
     assert (frame_bv.SortSize = uint32 pdu_in_bits)
     frame_bv
 
