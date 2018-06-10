@@ -71,26 +71,31 @@ let generate_timed_pcap_contents (generator : packets.packet) (quantity : uint32
   let result =
     {pcap.global_header = pcap.default_global_header;
      pcap.packets = List.fold (fun acc i ->
-       let pckt =
+       let pckt : byte [] option =
          if not (generator.generate ()) then
-           failwith "Failed to generate"
-         let result = generator.extract_packet ()
-         if not (f generator) then
-           failwith "Failed to apply f constraint"
-         match result with
-         | None -> failwith "Could not generate a packet"
-         | Some bytes -> bytes
-       let t = timer.ElapsedMilliseconds
-       printf "%d : %d\n" i t
-       timer.Restart()
-       { header =
-           { ts_sec = 0u;
-             ts_usec = uint32 t; (*FIXME precision loss*)
-             incl_len = uint32 (Array.length pckt);
-             orig_len = uint32 (Array.length pckt);
-           };
-         data = pckt
-       } :: acc) [] (general.enumerate (int quantity - 1))
+           printf "%d : Could not generate\n" i
+           None
+         else
+           let result = generator.extract_packet ()
+           if not (f generator) then
+             failwith "Failed to apply f constraint"
+           match result with
+           | None -> failwith "Could not extract the generated packet"
+           | Some bytes -> result
+       match pckt with
+       | None -> acc
+       | Some actual_pckt ->
+         let t = timer.ElapsedMilliseconds
+         printf "%d : %d\n" i t
+         timer.Restart()
+         { header =
+             { ts_sec = 0u;
+               ts_usec = uint32 t; (*FIXME precision loss*)
+               incl_len = uint32 (Array.length actual_pckt);
+               orig_len = uint32 (Array.length actual_pckt);
+             };
+           data = actual_pckt
+         } :: acc) [] (general.enumerate (int quantity - 1))
       }
   printfn "Finished: %d ms\n" sw.ElapsedMilliseconds
   countdown.Stop ()
