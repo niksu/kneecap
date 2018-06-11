@@ -27,16 +27,18 @@ controlling the backend solver
 
 let generate_packets (generator : packets.packet) (quantity : uint32) (f : packets.packet -> bool) : (uint32 * byte[]) list =
   general.enumerate (int quantity - 1)
-  |> List.map
-      (fun i ->
+  |> List.fold (fun st i ->
          if not (generator.generate ()) then
-           failwith "Failed to generate"
-         let result = generator.extract_packet ()
-         if not (f generator) then
-           failwith "Failed to apply f constraint"
-         match result with
-         | None -> failwith "Could not generate a packet"
-         | Some bytes -> (uint32 i, bytes))
+           st
+         else
+           let result = generator.extract_packet ()
+           if not (f generator) then
+             failwith "Failed to apply f constraint"
+           match result with
+           | None -> failwith "Could not extract the generated packet"
+           | Some bytes -> (uint32 i, bytes) :: st)
+     []
+  |> List.rev (*preserve order*)
 
 (*NOTE i assume that the generator has already been constrained*)
 let generate_pcap_contents (generator : packets.packet) (quantity : uint32) (f : packets.packet -> bool) : pcap.pcap_file_contents =
