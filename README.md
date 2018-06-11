@@ -78,7 +78,7 @@ msbuild kneecap.sln
 ```
 
 ## Running
-`$ MONO_PATH=${MONO_PATH}:${KNEECAP_DIR}/kneecap/ mono ${KNEECAP_DIR}/kneet/kneet.exe`
+`$ MONO_PATH=${MONO_PATH}:${KNEECAP_DIR}/kneecap/ mono ${KNEECAP_DIR}/kneet/bin/Debug/kneet.exe`
 
 You should see a list of numbers counting up to a thousand, at the end of which
 the program will terminate. Each of the numbers corresponded to a packet being
