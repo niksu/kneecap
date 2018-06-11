@@ -196,7 +196,7 @@ and [<AbstractClass>] payload_carrier () =
   (*Set up an encapsulation relationship between an instance of this class
     and an instance of packet. We do this by checking if a handler has
     been provided, and if so, then apply it to the packet instance.*)
-  member this.encapsulate (encapped : packet) : packet =
+  member this.encapsulate (encapped : packet) : payload_carrier =
 (*
     let handlers =
       List.filter (fun ehr -> ehr.packet_type = encapped.GetType()) can_encapsulate
@@ -209,8 +209,9 @@ and [<AbstractClass>] payload_carrier () =
         else failwith "Packet failed encapsulation test" (*FIXME give more info in the error message*)
     | _ -> failwith "Packet encapsulation failed -- more than one handler present" (*FIXME give more info in the error message*)
 *)
+    (*FIXME check that encappted != this, otherwise packet will encapsulate itself*)
           carrying <- Some encapped
-          this :> packet
+          this
 
   (*Causes constraint_different to ripple up the encapsulation chain*)
   override this.constrain_different () : bool =
@@ -359,7 +360,7 @@ type address_carrier =
     abstract member address_interpretation : interpretation
   end
 
-let (<==) (p1 : payload_carrier) (p2 : payload_carrier) = p1.encapsulate p2
+let (<==) (p1 : payload_carrier) (p2 : payload_carrier) : payload_carrier = p1.encapsulate p2
 
 let (+==) (p1 : payload_carrier) (p2s : payload_carrier list) =
   List.fold (fun (acc : payload_carrier) (p : payload_carrier) ->
