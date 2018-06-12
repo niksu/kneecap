@@ -254,12 +254,15 @@ type ipv4 (pdu_in_bytes : uint32) =
          this.extract_field_value "destination_address";
          this.extract_field_value "payload";
          ]
-      let bytes =
-        List.map Option.get raw_field_extracts
-        |> Array.concat
-      if Array.length bytes * 8 > int this.packet_size then
-        failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
-      Some bytes
+      if List.exists (fun x -> x = None) raw_field_extracts then
+        None
+      else
+        let bytes =
+          List.map Option.get raw_field_extracts
+          |> Array.concat
+        if Array.length bytes * 8 > int this.packet_size then
+          failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
+        Some bytes
 
   (*FIXME obtain value for payload from encapsulated packets*)
   override this.pre_generate () = true
