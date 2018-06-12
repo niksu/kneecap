@@ -77,12 +77,12 @@ let generate_timed_pcap_contents (generator : packets.packet) (quantity : uint32
            printf "%d : Could not generate\n" i
            None
          else
-           let result = generator.extract_packet ()
-           if not (f generator) then
-             failwith "Failed to apply f constraint"
-           match result with
-           | None -> failwith "Could not extract the generated packet"
-           | Some bytes -> result
+           match generator.extract_packet () with
+           | None ->
+             failwith "Could not extract the generated packet"
+           | Some bytes ->
+               ignore(f generator)
+               Some bytes
        match pckt with
        | None -> acc
        | Some actual_pckt ->
