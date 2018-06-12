@@ -87,19 +87,18 @@ let extract_concatted_witnesses (ctxt : Microsoft.Z3.Context) (pad : bool) (mode
     | (_, w) :: ws ->
       let w' = Numerics.BigInteger.Parse(w.ToString())
       List.fold (fun acc (width, e) ->
-(*        ctxt.MkConcat (acc, e))*)
         let e' = Numerics.BigInteger.Parse(e.ToString())
         (acc <<< int width) ||| e')
        w' ws
   let pre_array = ref (numeric_w.ToByteArray())
   let expected_width = total_name_sort_size / uint32 8(*bitwidth of byte*)
-  (*Check if we leading 00s have been inserted -- this happens when the value is close to the maximum number the width can represent.*)
+  (*Check if leading 00s have been inserted -- this happens when the value is close to the maximum number the width can represent.*)
   if uint32 pre_array.contents.Length = expected_width + 1u then
     if not config.solver_is_big_endian then System.Array.Reverse(!pre_array)
     Array.Resize(pre_array, int(*FIXME precision loss from uint32?*) expected_width)
     if not config.solver_is_big_endian then System.Array.Reverse(!pre_array)
   if pad then
-    (*Pad up to the expected number of bytes. Extended an array to a bigger size will
+    (*Pad up to the expected number of bytes. Extending an array to a bigger size will
       result in the new cells initialised to 0, which is what we want.*)
     if uint32 pre_array.contents.Length < expected_width then
       Array.Resize(pre_array, int(*FIXME precision loss from uint32?*) expected_width)
