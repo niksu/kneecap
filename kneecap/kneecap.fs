@@ -58,7 +58,6 @@ let generate_pcap_contents (generator : packets.packet) (quantity : uint32) (f :
      }) raw_packets
     }
 
-
 let generate_timed_pcap_contents (generator : packets.packet) (quantity : uint32) (f : packets.packet -> bool) : pcap.pcap_file_contents =
   assert (generator.packet_size <= pcap.default_global_header.snaplen)
 

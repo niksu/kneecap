@@ -209,7 +209,7 @@ and [<AbstractClass>] payload_carrier () =
         else failwith "Packet failed encapsulation test" (*FIXME give more info in the error message*)
     | _ -> failwith "Packet encapsulation failed -- more than one handler present" (*FIXME give more info in the error message*)
 *)
-    (*FIXME check that encappted != this, otherwise packet will encapsulate itself*)
+    (*FIXME check that encapped != this, otherwise packet will encapsulate itself*)
           carrying <- Some encapped
           this
 
