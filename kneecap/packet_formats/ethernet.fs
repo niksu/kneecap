@@ -271,21 +271,27 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
   override this.extract_packet () =
     if this.solution = None then None
     else
+      let extracted_packet_fields =
+        ["destination_address";
+         "source_address";
+         "ethertype";
+         "payload";
+         "fcs"]
       let raw_field_extracts =
-        [this.extract_field_value "destination_address";
-         this.extract_field_value "source_address";
-         this.extract_field_value "ethertype";
-         this.extract_field_value "payload";
-         this.extract_field_value "fcs"]
-      if List.exists (fun x -> x = None) raw_field_extracts then
-        None
-      else
-        let bytes =
-          List.map Option.get raw_field_extracts
-          |> Array.concat
-        if Array.length bytes * 8 > int this.packet_size then
-          failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
-        Some bytes
+        List.map (fun fieldname ->
+         (fieldname, this.extract_field_value fieldname))
+         extracted_packet_fields
+      List.iter (fun (fieldname, extract) ->
+        if extract = None then
+          failwith ("Model was found, but Ethernet field " + fieldname + " turned up null")
+        else ()
+      ) raw_field_extracts
+      let bytes =
+        List.map (snd >> Option.get) raw_field_extracts
+        |> Array.concat
+      if Array.length bytes * 8 > int this.packet_size then
+        failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
+      Some bytes
 
   override this.extract_field_value (field : string) : byte[] option =
     (*FIXME DRY principle with extract_packet*)
