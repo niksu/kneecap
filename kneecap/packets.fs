@@ -75,7 +75,7 @@ type packet () =
       failwith "pre_generate() failed -- consequently generate() has been aborted"
 
     let (mdl_opt, result) =
-      match slv.Check() with
+      match slv.Check () with
       | Status.SATISFIABLE -> Some slv.Model, true
       | Status.UNSATISFIABLE -> None, false
       | _ -> failwith "Received unknown result from the solver"
