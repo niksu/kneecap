@@ -260,7 +260,7 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
     (It could, but I don't do that.)*)
   override this.packet_bv =
     let frame_bv =
-      concat_bvs this.context [dst_mac_bv; src_mac_bv; ethertype_bv; payload_bv; crc32_bv]
+      concat_bvs this.context [dst_mac_bv; src_mac_bv; ethertype_bv; payload_bv] // NOTE excluding crc32_bv since it's calculated rather than generated, and this this.packet_bv is used to generate packets, the solver might be changing irrelevant parts of the packet.
     assert (frame_bv.SortSize = uint32 pdu_in_bits)
     frame_bv
 
@@ -281,7 +281,7 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
         List.map Option.get raw_field_extracts
         |> Array.concat
       if Array.length bytes * 8 > int this.packet_size then
-        failwith "Output packet size exceeded PDU size"
+        failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
       Some bytes
 
   override this.extract_field_value (field : string) : byte[] option =
@@ -310,7 +310,7 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
          match this.encapsulated_packet with
          | None -> base.extract_field_value field
          | Some (pckt : packet) ->
-            pckt.generate ()
+            ignore(pckt.generate ())
             pckt.extract_packet ()
       | _ -> base.extract_field_value field
 

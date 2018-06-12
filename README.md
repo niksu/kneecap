@@ -65,21 +65,20 @@ cd build; make
 2) Build the managed wrapper to Z3.
 ```
 cd ../src/api/dotnet
-xbuild Microsoft.Z3.csproj
+msbuild Microsoft.Z3.csproj
 ```
 3) We will use Z3 to build Kneecap. Copy files over.
 ```
-cp ${Z3_DIR}/src/api/dotnet/obj/Debug/Microsoft.Z3.dll ${KNEECAP_DIR}/kneecap
-cp ${Z3_DIR}/build/libz3* ${KNEECAP_DIR}/kneecap
+cp ${Z3_DIR}/src/api/dotnet/obj/Debug/Microsoft.Z3.dll ${KNEECAP_DIR}
 ```
 4) Build Kneecap
 ```
 cd ${KNEECAP_DIR}
-make
+msbuild kneecap.sln
 ```
 
 ## Running
-`$ MONO_PATH=${MONO_PATH}:${KNEECAP_DIR}/kneecap/ mono ${KNEECAP_DIR}/kneet/kneet.exe`
+`$ MONO_PATH=${MONO_PATH}:${KNEECAP_DIR}/kneecap/ mono ${KNEECAP_DIR}/kneet/bin/Debug/kneet.exe`
 
 You should see a list of numbers counting up to a thousand, at the end of which
 the program will terminate. Each of the numbers corresponded to a packet being

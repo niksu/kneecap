@@ -27,16 +27,18 @@ controlling the backend solver
 
 let generate_packets (generator : packets.packet) (quantity : uint32) (f : packets.packet -> bool) : (uint32 * byte[]) list =
   general.enumerate (int quantity - 1)
-  |> List.map
-      (fun i ->
+  |> List.fold (fun st i ->
          if not (generator.generate ()) then
-           failwith "Failed to generate"
-         let result = generator.extract_packet ()
-         if not (f generator) then
-           failwith "Failed to apply f constraint"
-         match result with
-         | None -> failwith "Could not generate a packet"
-         | Some bytes -> (uint32 i, bytes))
+           st
+         else
+           let result = generator.extract_packet ()
+           if not (f generator) then
+             failwith "Failed to apply f constraint"
+           match result with
+           | None -> failwith "Could not extract the generated packet"
+           | Some bytes -> (uint32 i, bytes) :: st)
+     []
+  |> List.rev (*preserve order*)
 
 (*NOTE i assume that the generator has already been constrained*)
 let generate_pcap_contents (generator : packets.packet) (quantity : uint32) (f : packets.packet -> bool) : pcap.pcap_file_contents =
@@ -60,7 +62,7 @@ let generate_pcap_contents (generator : packets.packet) (quantity : uint32) (f :
 let generate_timed_pcap_contents (generator : packets.packet) (quantity : uint32) (f : packets.packet -> bool) : pcap.pcap_file_contents =
   assert (generator.packet_size <= pcap.default_global_header.snaplen)
 
-  use countdown = System.Timers.Timer(30000.)
+  use countdown = new System.Timers.Timer(30000.)
   countdown.AutoReset <- true
   countdown.Elapsed.Add (fun _ ->
     printfn "GC'd\n"
@@ -71,26 +73,31 @@ let generate_timed_pcap_contents (generator : packets.packet) (quantity : uint32
   let result =
     {pcap.global_header = pcap.default_global_header;
      pcap.packets = List.fold (fun acc i ->
-       let pckt =
+       let pckt : byte [] option =
          if not (generator.generate ()) then
-           failwith "Failed to generate"
-         let result = generator.extract_packet ()
-         if not (f generator) then
-           failwith "Failed to apply f constraint"
-         match result with
-         | None -> failwith "Could not generate a packet"
-         | Some bytes -> bytes
-       let t = timer.ElapsedMilliseconds
-       printf "%d : %d\n" i t
-       timer.Restart()
-       { header =
-           { ts_sec = 0u;
-             ts_usec = uint32 t; (*FIXME precision loss*)
-             incl_len = uint32 (Array.length pckt);
-             orig_len = uint32 (Array.length pckt);
-           };
-         data = pckt
-       } :: acc) [] (general.enumerate (int quantity - 1))
+           printf "%d : Could not generate\n" i
+           None
+         else
+           let result = generator.extract_packet ()
+           if not (f generator) then
+             failwith "Failed to apply f constraint"
+           match result with
+           | None -> failwith "Could not extract the generated packet"
+           | Some bytes -> result
+       match pckt with
+       | None -> acc
+       | Some actual_pckt ->
+         let t = timer.ElapsedMilliseconds
+         printf "%d : %d\n" i t
+         timer.Restart()
+         { header =
+             { ts_sec = 0u;
+               ts_usec = uint32 t; (*FIXME precision loss*)
+               incl_len = uint32 (Array.length actual_pckt);
+               orig_len = uint32 (Array.length actual_pckt);
+             };
+           data = actual_pckt
+         } :: acc) [] (general.enumerate (int quantity - 1))
       }
   printfn "Finished: %d ms\n" sw.ElapsedMilliseconds
   countdown.Stop ()
