@@ -277,12 +277,15 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
          this.extract_field_value "ethertype";
          this.extract_field_value "payload";
          this.extract_field_value "fcs"]
-      let bytes =
-        List.map Option.get raw_field_extracts
-        |> Array.concat
-      if Array.length bytes * 8 > int this.packet_size then
-        failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
-      Some bytes
+      if List.exists (fun x -> x = None) raw_field_extracts then
+        None
+      else
+        let bytes =
+          List.map Option.get raw_field_extracts
+          |> Array.concat
+        if Array.length bytes * 8 > int this.packet_size then
+          failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
+        Some bytes
 
   override this.extract_field_value (field : string) : byte[] option =
     (*FIXME DRY principle with extract_packet*)
