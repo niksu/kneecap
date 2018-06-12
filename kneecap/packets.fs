@@ -108,18 +108,18 @@ type packet () =
   (*Extract the witness for a constant as a byte array.
     Returns None if a model hasn't been generated yet.*)
   default this.extract_field_value (field_name : string) : byte[] option =
-    let r = lookup_dc field_name this.distinguished_constants
-    match r.typ with
-    | Field (bv_const, byte_proc) ->
-      match model with
-      | None -> None
-      | Some mdl ->
+    match model with
+    | None -> None
+    | Some mdl ->
+      let r = lookup_dc field_name this.distinguished_constants
+      match r.typ with
+      | Field (bv_const, byte_proc) ->
          extract_concatted_witnesses ctxt true mdl [bv_const]
          (*The byte_proc function should see to the byte ordering,
            bit ordering fine, and any padding requirements.*)
          |> byte_proc
          |> Some
-    | _ -> failwith ("This doesn't resolve to a field: " + field_name)
+      | _ -> failwith ("This doesn't resolve to a field: " + field_name)
 
   (*Generalises extract_field_value, but
     involves applying a single byte_proc to all concatted fields' bytes*)
