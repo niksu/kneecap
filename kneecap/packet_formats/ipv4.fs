@@ -226,7 +226,7 @@ type ipv4 (pdu_in_bytes : uint32) =
          field_Fragment_Offset_bv;
          field_Time_To_Live_bv;
          field_Protocol_bv;
-         field_Header_Checksum_bv;
+         field_Header_Checksum_bv; // FIXME should exclude this, similar to how the crc32 is excluded in Ethernet?
          field_Source_IP_Address_bv;
          field_Destination_IP_Address_bv;
          field_payload_bv]
