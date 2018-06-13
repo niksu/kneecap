@@ -49,21 +49,6 @@ let main argv =
                       @@>
     |> ignore
 
-
-(*
-                     ethernet.ethertype = ethernet.ethertype_ipv4 @>
-
-    let z = match eth.encapsulated_packet with
-            | None -> true
-            | _ -> false
-
-    printfn "z=%A" z
-
-                       ethernet.ethertype;
-                       ethernet.payload = ""
-                       ethernet.fcs = ""
-*)
-
 (* FIXME adapting the more complex constraints
     ip +==
       [(new ipv4(150u)).constrain
