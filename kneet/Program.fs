@@ -25,11 +25,13 @@ open kneecap
 [<EntryPoint>]
 let main argv = 
     printfn "Creating scheme."
-    use eth = new ethernet(184u)
-    printfn "ethernet packet size in bits: %d" eth.packet_size
 
-    use ip = new ipv4(180u)
-    printfn "ipv4 packet size in bits: %d" ip.packet_size
+    use ip = new ipv4(30u)
+    printfn "ipv4 packet size (bytes): %d" (ip.packet_size / 8u)
+
+    use eth = new ethernet(184u + ip.packet_size / 8u)
+    printfn "ethernet packet size (bytes): %d" (eth.packet_size / 8u)
+
 
     printfn "Adding constraints."
     eth.constrain <@ ethernet.source_address = ethernet.mac_address "[1-5,10]:34:56:78:90:*" &&
@@ -39,11 +41,30 @@ let main argv =
                          ipv4.source_address = ipv4.destination_address &&
                          ipv4.internet_header_length = 5 &&
                          ipv4.total_length = 170 &&
-                         ipv4.TTL = 5 &&
+//                         ipv4.TTL = 5 &&
+                         ipv4.TTL > 5 && (*Only one valid packet exists*)
+                         ipv4.TTL < 7 &&
                          ipv4.protocol = ipv4.protocol_ip_in_ip
                          (*ipv4.source_address < ipv4.destination_address*)
                       @@>
+    |> ignore
 
+
+(*
+                     ethernet.ethertype = ethernet.ethertype_ipv4 @>
+
+    let z = match eth.encapsulated_packet with
+            | None -> true
+            | _ -> false
+
+    printfn "z=%A" z
+
+                       ethernet.ethertype;
+                       ethernet.payload = ""
+                       ethernet.fcs = ""
+*)
+
+(* FIXME adapting the more complex constraints
     ip +==
       [(new ipv4(150u)).constrain
         <@ ipv4.version = 4 &&
@@ -72,9 +93,8 @@ let main argv =
 
     printfn "Added constraints. Generating packets next."
     let x = eth.assertion ()
-    let x = ip.assertion ()
-
-    generate_timed_pcap_contents eth 1000u (fun (p : packet) -> p.constrain_different())
+*)
+    generate_timed_pcap_contents eth 10u (fun (p : packet) -> p.constrain_different())
     |> pcap.serialise_pcap @"stack_6_1000.pcap"
 
     printfn "%A" argv
