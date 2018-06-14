@@ -72,15 +72,16 @@ type packet () =
       this step could involve recursively obtaining payload values from
       encapsulated packets.*)
     if not (this.pre_generate ()) then
-      failwith "pre_generate() failed -- consequently generate() has been aborted"
-
-    let (mdl_opt, result) =
-      match slv.Check () with
-      | Status.SATISFIABLE -> Some slv.Model, true
-      | Status.UNSATISFIABLE -> None, false
-      | _ -> failwith "Received unknown result from the solver"
-    model <- mdl_opt
-    result
+      // pre_generate() failed -- consequently generate() has been aborted
+      false
+    else
+      let (mdl_opt, result) =
+        match slv.Check () with
+        | Status.SATISFIABLE -> Some slv.Model, true
+        | Status.UNSATISFIABLE -> None, false
+        | _ -> failwith "Received unknown result from the solver"
+      model <- mdl_opt
+      result
 
   member this.context = ctxt
   member this.solver = slv
@@ -250,12 +251,6 @@ type constrainable_payload_carrier () =
 
   (*Reset constraints*)
   member this.unconstrain () = _constraint <- true
-  (*Map the name of a field to the BV that is created for it.*)
-  member this.name_to_field (s : string) : BitVecExpr =
-    let r = lookup_dc s this.distinguished_constants
-    match r.typ with
-    | Field (bv, _) -> bv
-    | _ -> failwith ("Expected " + s + " to resolve to a field, but it doesn't")
 
   (*Bind a name -- this will associating a name (presented as a string) with
     a protocol field. The scope of the name extends across all protocols in lower
@@ -338,6 +333,34 @@ type constrainable_payload_carrier () =
     this.solver.Assert (this.context.MkAnd (translated_constraint, aux_constraint))
     this
 
+  (*Map the name of a field to the BV that is created for it.*)
+  member this.name_to_field (s : string) : BitVecExpr =
+    let r = lookup_dc s (*this.distinguished_constants*) this.distinguish_constants_closure
+    match r.typ with
+    | Field (bv, _) -> bv
+    | _ -> failwith ("Expected " + s + " to resolve to a field, but it doesn't")
+
+  (*Like constrain_different but can constrain to specific fields.*)
+  member this.constrain_different_flex (expr : Quotations.Expr) : bool = (* FIXME sucky name; code needs cleaning*)
+      match base.solution with
+      | None -> false
+      | Some mdl ->
+        let field_str = name_from_expr expr (*FIXME i implicitly assume that expr contains a single field name*)
+(*
+        printfn "%A" this.distinguished_constants
+        printfn "%A" field_str
+        printfn "%A" expr
+*)
+        let field_bv = this.name_to_field field_str
+(*
+          let r = lookup_dc field_str this.distinguished_constants
+          match r.typ with
+          | Field (bv_const, _) -> bv_const
+          | _ -> failwith ("This doesn't resolve to a field: " + field_str)
+*)
+        let w = extract_raw_witness mdl field_bv
+        this.solver.Assert (this.context.MkNot (this.context.MkEq (field_bv, w)))
+        true
 
 (*FIXME every time we iterate, and get a new model, will we need to garbage collect names from the context? can we use Push and Pop to help Z3 with this (i think it uses reference counting)*)
 

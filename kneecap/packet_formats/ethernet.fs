@@ -323,8 +323,10 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
             pckt.extract_packet ()
       | _ -> base.extract_field_value field
 
-  (*FIXME obtain value for payload from encapsulated packets*)
-  override this.pre_generate () = true
+  override this.pre_generate () =
+    match this.encapsulated_packet with
+    | None -> true
+    | Some pckt -> pckt.generate ()
 
   (*Coercion placeholder from strings into an IP address*)
   static member mac_address _ (*: packet_constant*) = failwith "This value should not be evaluated by F#"
