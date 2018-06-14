@@ -34,10 +34,8 @@ let generate_packets (generator : packets.packet) (quantity : uint32) (f : packe
            match generator.extract_packet () with
            | None -> failwith "Could not extract the generated packet"
            | Some bytes ->
-               printfn "Got current packet" // FIXME
                if not (f generator) then
-                 printfn "Cannot generate next packet" // FIXME
-                 generator.solution <- None // FIXME
+                 generator.solution <- None
                  (false, st)
                else
                  (true, (uint32 i, bytes) :: st))
