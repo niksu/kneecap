@@ -41,8 +41,7 @@ let main argv =
                          ipv4.source_address = ipv4.destination_address &&
                          ipv4.internet_header_length = 5 &&
                          ipv4.total_length = 170 &&
-//                         ipv4.TTL = 5 &&
-                         ipv4.TTL > 5 && (*Only one valid packet exists*)
+                         ipv4.TTL > 5 && (*Limit number of valid solutions*)
                          ipv4.TTL < 7 &&
                          ipv4.protocol = ipv4.protocol_ip_in_ip
                          (*ipv4.source_address < ipv4.destination_address*)
@@ -79,7 +78,9 @@ let main argv =
     printfn "Added constraints. Generating packets next."
     let x = eth.assertion ()
 *)
-    generate_timed_pcap_contents eth 10u (fun (p : packet) -> p.constrain_different())
+//    generate_timed_pcap_contents eth 10u (fun (p : packet) -> p.constrain_different())
+//    generate_pcap_contents eth 10u (fun (p : packet) -> ip.constrain_different_flex(<@@ ipv4.TTL @@>))
+    generate_timed_pcap_contents eth 10u (fun (p : packet) -> ip.constrain_different_flex(<@@ ipv4.TTL @@>))
     |> pcap.serialise_pcap @"stack_6_1000.pcap"
 
     printfn "%A" argv
