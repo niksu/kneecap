@@ -346,18 +346,7 @@ type constrainable_payload_carrier () =
       | None -> false
       | Some mdl ->
         let field_str = name_from_expr expr (*FIXME i implicitly assume that expr contains a single field name*)
-(*
-        printfn "%A" this.distinguished_constants
-        printfn "%A" field_str
-        printfn "%A" expr
-*)
         let field_bv = this.name_to_field field_str
-(*
-          let r = lookup_dc field_str this.distinguished_constants
-          match r.typ with
-          | Field (bv_const, _) -> bv_const
-          | _ -> failwith ("This doesn't resolve to a field: " + field_str)
-*)
         let w = extract_raw_witness mdl field_bv
         this.solver.Assert (this.context.MkNot (this.context.MkEq (field_bv, w)))
         true
