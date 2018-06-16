@@ -388,5 +388,8 @@ let (<<==) (p1 : payload_carrier) (p2s : payload_carrier list) : payload_carrier
     ignore(acc <== p)
     p) p1 p2s
 
-let (+==) (p1 : payload_carrier) (p2s : payload_carrier list) : unit =
+let (.==) (p1 : payload_carrier) (p2 : payload_carrier) : unit =
+  ignore(p1 <== p2)
+
+let (..==) (p1 : payload_carrier) (p2s : payload_carrier list) : unit =
   ignore(p1 <<== p2s)

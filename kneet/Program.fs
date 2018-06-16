@@ -36,7 +36,7 @@ let main argv =
     printfn "Adding constraints."
     eth.constrain <@ ethernet.source_address = ethernet.mac_address "[1-5,10]:34:56:78:90:*" &&
                      ethernet.ethertype = ethernet.ethertype_ipv4 @>
-    <== ip.constrain <@@ ipv4.version = 4 &&
+    .== ip.constrain <@@ ipv4.version = 4 &&
                          ipv4.source_address = ipv4.ipv4_address "10.10.10.[55-60]" &&
                          ipv4.source_address = ipv4.destination_address &&
                          ipv4.internet_header_length = 5 &&
@@ -45,7 +45,6 @@ let main argv =
                          ipv4.protocol = ipv4.protocol_ip_in_ip
                          (*ipv4.source_address < ipv4.destination_address*)
                       @@>
-    |> ignore
     ip.set(<@@ ipv4.total_length @@>, ip.packet_size / 8u)
 
 (* FIXME adapting the more complex constraints
