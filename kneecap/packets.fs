@@ -374,9 +374,10 @@ type address_carrier =
 
 let (<==) (p1 : payload_carrier) (p2 : payload_carrier) : payload_carrier = p1.encapsulate p2
 
-let (+==) (p1 : payload_carrier) (p2s : payload_carrier list) =
+let (<<==) (p1 : payload_carrier) (p2s : payload_carrier list) : payload_carrier =
   List.fold (fun (acc : payload_carrier) (p : payload_carrier) ->
     ignore(acc <== p)
     p) p1 p2s
-    |> ignore
-  ()
+
+let (+==) (p1 : payload_carrier) (p2s : payload_carrier list) : unit =
+  ignore(p1 <<== p2s)
