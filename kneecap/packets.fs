@@ -381,7 +381,9 @@ type address_carrier =
     abstract member address_interpretation : interpretation
   end
 
-let (<==) (p1 : payload_carrier) (p2 : payload_carrier) : payload_carrier = p1.encapsulate p2
+let (<==) (p1 : payload_carrier) (p2 : payload_carrier) : payload_carrier =
+  ignore(p1.encapsulate p2)
+  p2
 
 let (<<==) (p1 : payload_carrier) (p2s : payload_carrier list) : payload_carrier =
   List.fold (fun (acc : payload_carrier) (p : payload_carrier) ->
