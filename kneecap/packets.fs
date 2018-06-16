@@ -351,6 +351,15 @@ type constrainable_payload_carrier () =
         this.solver.Assert (this.context.MkNot (this.context.MkEq (field_bv, w)))
         true
 
+  (*Constrain "expr" to be "value".*)
+  member this.set (expr : Quotations.Expr, value : uint32) : unit =
+    let field_str = name_from_expr expr
+    let translated_constraint, aux_constraint =
+      fsexpr_to_cexp [Operator Oeq; Operand_Arit (ValI (int(value))); Operand_Arit (Const {idx = None; name = Some field_str; foreign = false})]
+      |> annotate_bv_widths this.distinguish_constants_closure
+      |> cexp_to_BoolExpr this.context this.distinguish_constants_closure
+    this.solver.Assert (this.context.MkAnd (translated_constraint, aux_constraint))
+
 (*FIXME every time we iterate, and get a new model, will we need to garbage collect names from the context? can we use Push and Pop to help Z3 with this (i think it uses reference counting)*)
 
 (*

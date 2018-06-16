@@ -29,7 +29,7 @@ let main argv =
     use ip = new ipv4(30u)
     printfn "ipv4 packet size (bytes): %d" (ip.packet_size / 8u)
 
-    use eth = new ethernet(184u + ip.packet_size / 8u)
+    use eth = new ethernet(2u*(*FIXME*)14u + ip.packet_size / 8u)
     printfn "ethernet packet size (bytes): %d" (eth.packet_size / 8u)
 
 
@@ -40,13 +40,13 @@ let main argv =
                          ipv4.source_address = ipv4.ipv4_address "10.10.10.[55-60]" &&
                          ipv4.source_address = ipv4.destination_address &&
                          ipv4.internet_header_length = 5 &&
-                         ipv4.total_length = 170 &&
                          ipv4.TTL > 5 && (*Limit number of valid solutions*)
                          ipv4.TTL < 7 &&
                          ipv4.protocol = ipv4.protocol_ip_in_ip
                          (*ipv4.source_address < ipv4.destination_address*)
                       @@>
     |> ignore
+    ip.set(<@@ ipv4.total_length @@>, ip.packet_size / 8u)
 
 (* FIXME adapting the more complex constraints
     ip +==
