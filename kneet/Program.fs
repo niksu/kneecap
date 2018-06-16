@@ -29,7 +29,7 @@ let main argv =
     use ip = new ipv4(30u)
     printfn "ipv4 packet size (bytes): %d" (ip.packet_size / 8u)
 
-    use eth = new ethernet(2u*(*FIXME*)14u + ip.packet_size / 8u)
+    use eth = new ethernet(18u + ip.packet_size / 8u)
     printfn "ethernet packet size (bytes): %d" (eth.packet_size / 8u)
 
 
