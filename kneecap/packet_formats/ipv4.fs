@@ -238,7 +238,7 @@ type ipv4 (pdu_in_bytes : uint32) =
 
   (*Concat together the field values we extract from a solution to
     this packet's constraints.*)
-  override this.extract_packet () =
+  member this.extract_packet_unchecksummed () =
     if this.solution = None then None
     else
       let raw_field_extracts =
@@ -262,6 +262,34 @@ type ipv4 (pdu_in_bytes : uint32) =
           |> Array.concat
         if Array.length bytes * 8 > int this.packet_size then
           failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
+        Some bytes
+
+  static member checksum (bs : byte[]) : byte * byte =
+      let rec pair_bytes xs acc =
+        match xs with
+        | [] -> List.rev acc
+        | [_] -> failwith "Odd number of bytes cannot be processed by checksum"
+        | b1 :: b2 :: rest ->
+            pair_bytes rest ((b1, b2) :: acc)
+      let byte_pairs =
+        pair_bytes (List.ofArray bs) []
+        |> List.map (fun (b1, b2) ->
+          (uint16(b1) <<< 8) + uint16(b2))
+      let sum = List.fold (fun (st : uint32) (x : uint16) ->
+          st + uint32(x)) 0u byte_pairs
+      let added_carry : uint16 =
+          let carry : uint32 = 0x000F0000u &&& sum
+          uint16((0x0000FFFFu &&& sum) + carry)
+      let result = ~~~ added_carry
+      byte(result >>> 8), byte(result)
+
+  override this.extract_packet () =
+    match this.extract_packet_unchecksummed () with
+    | None -> None
+    | Some bytes ->
+        let b1, b2 = ipv4.checksum bytes
+        Array.set bytes 10 b1
+        Array.set bytes 11 b2
         Some bytes
 
   (*FIXME obtain value for payload from encapsulated packets*)
