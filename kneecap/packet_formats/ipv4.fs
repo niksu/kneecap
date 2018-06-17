@@ -287,7 +287,7 @@ type ipv4 (pdu_in_bytes : uint32) =
     match this.extract_packet_unchecksummed () with
     | None -> None
     | Some bytes ->
-        let b1, b2 = ipv4.checksum bytes
+        let b1, b2 = ipv4.checksum (Array.sub bytes 0 20(*FIXME const -- assuming static IPv4 header size*))
         Array.set bytes 10 b1
         Array.set bytes 11 b2
         Some bytes
