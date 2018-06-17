@@ -30,7 +30,7 @@ open ir_processing
 type udp (pdu_in_bytes : uint32) =
   inherit constrainable_payload_carrier ()
   do
-    assert (pdu_in_bytes >= uint32 20)
+    assert (pdu_in_bytes >= uint32 8)
   let ctxt = base.context
   let slv = base.solver
 
@@ -130,6 +130,7 @@ type udp (pdu_in_bytes : uint32) =
          this.extract_field_value "destination_port";
          this.extract_field_value "length";
          this.extract_field_value "checksum";
+         this.extract_field_value "payload";
          ]
       let bytes =
         List.map Option.get raw_field_extracts
@@ -138,8 +139,10 @@ type udp (pdu_in_bytes : uint32) =
         failwith "Output packet size exceeded PDU size"
       Some bytes
 
-  (*FIXME obtain value for payload from encapsulated packets*)
-  override this.pre_generate () = true
+  override this.pre_generate () =
+    match this.encapsulated_packet with
+    | None -> true
+    | Some pckt -> pckt.generate ()
 
   (*Placeholder for packet fields*)
   static member payload (*: packet_constant*) = failwith "This value should not be evaluated by F#"
