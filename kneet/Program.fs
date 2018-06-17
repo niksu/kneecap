@@ -21,12 +21,16 @@ open etherip
 open ipv4
 open arp
 open kneecap
+open udp
 
 [<EntryPoint>]
 let main argv = 
     printfn "Creating scheme."
 
-    use ip = new ipv4(30u)
+    use udpp = new udp(30u)
+    printfn "udp packet size (bytes): %d" (udpp.packet_size / 8u)
+
+    use ip = new ipv4(20u + udpp.packet_size / 8u)
     printfn "ipv4 packet size (bytes): %d" (ip.packet_size / 8u)
 
     use eth = new ethernet(18u + ip.packet_size / 8u)
@@ -36,16 +40,21 @@ let main argv =
     printfn "Adding constraints."
     eth.constrain <@ ethernet.source_address = ethernet.mac_address "[1-5,10]:34:56:78:90:*" &&
                      ethernet.ethertype = ethernet.ethertype_ipv4 @>
-    .== ip.constrain <@@ ipv4.version = 4 &&
+    <== ip.constrain <@@ ipv4.version = 4 &&
                          ipv4.source_address = ipv4.ipv4_address "10.10.10.[55-60]" &&
                          ipv4.source_address = ipv4.destination_address &&
                          ipv4.internet_header_length = 5 &&
                          ipv4.TTL > 5 && (*Limit number of valid solutions*)
                          ipv4.TTL < 7 &&
-                         ipv4.protocol = ipv4.protocol_ip_in_ip
+                         (*ipv4.protocol = ipv4.protocol_ip_in_ip*)
+                         ipv4.protocol = ipv4.protocol_udp
                          (*ipv4.source_address < ipv4.destination_address*)
                       @@>
+    .== udpp.constrain <@@ udp.source_port = 4 &&
+                           udp.destination_port = 4
+                        @@>
     ip.set(<@@ ipv4.total_length @@>, ip.packet_size / 8u)
+    udpp.set(<@@ udp.length @@>, 12u(*FIXME const*) (*udpp.packet_size / 8u*))
 
 (* FIXME adapting the more complex constraints
     ip +==
