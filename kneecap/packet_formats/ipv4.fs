@@ -292,8 +292,10 @@ type ipv4 (pdu_in_bytes : uint32) =
         Array.set bytes 11 b2
         Some bytes
 
-  (*FIXME obtain value for payload from encapsulated packets*)
-  override this.pre_generate () = true
+  override this.pre_generate () =
+    match this.encapsulated_packet with
+    | None -> true
+    | Some pckt -> pckt.generate ()
 
   (*Coercion placeholder from strings into an IP address*)
   static member ipv4_address _ (*: packet_constant *)= failwith "This value should not be evaluated by F#"
