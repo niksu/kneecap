@@ -22,12 +22,16 @@ open ipv4
 open arp
 open kneecap
 open udp
+open opaque
 
 [<EntryPoint>]
 let main argv = 
     printfn "Creating scheme."
 
-    use udpp = new udp(30u)
+    use opaqp = new opaque(30u)
+    printfn "Payload size (bytes): %d" (opaqp.packet_size / 8u)
+
+    use udpp = new udp(8u + opaqp.packet_size / 8u)
     printfn "udp packet size (bytes): %d" (udpp.packet_size / 8u)
 
     use ip = new ipv4(20u + udpp.packet_size / 8u)
@@ -50,11 +54,13 @@ let main argv =
                          ipv4.protocol = ipv4.protocol_udp
                          (*ipv4.source_address < ipv4.destination_address*)
                       @@>
-    .== udpp.constrain <@@ udp.source_port = 4 &&
-                           udp.destination_port = 4
+    <== udpp.constrain <@@ udp.source_port = 4 (*&& FIXME broken
+                           udp.destination_port <> udp.source_port*)
                         @@>
+    .== opaqp
+
     ip.set(<@@ ipv4.total_length @@>, ip.packet_size / 8u)
-    udpp.set(<@@ udp.length @@>, 12u(*FIXME const*) (*udpp.packet_size / 8u*))
+    udpp.set(<@@ udp.length @@>, udpp.packet_size / 8u)
 
 (* FIXME adapting the more complex constraints
     ip +==

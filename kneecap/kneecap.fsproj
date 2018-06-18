@@ -60,6 +60,7 @@
     <Compile Include="packet_formats\ipv4.fs" />
     <Compile Include="packet_formats\tcp.fs" />
     <Compile Include="packet_formats\udp.fs" />
+    <Compile Include="packet_formats\opaque.fs" />
   </ItemGroup>
   <Import Project="$(FSharpTargetsPath)" />
 </Project>
