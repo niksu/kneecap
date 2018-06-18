@@ -255,6 +255,7 @@ type ipv4 (pdu_in_bytes : uint32) =
          this.extract_field_value "payload";
          ]
       if List.exists (fun x -> x = None) raw_field_extracts then
+        (*FIXME maybe we should break if this happens*)
         None
       else
         let bytes =
