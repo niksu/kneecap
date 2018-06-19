@@ -121,11 +121,10 @@ type udp (pdu_in_bytes : uint32) =
 
   (*Concat together the field values we extract from a solution to
     this packet's constraints.*)
-  override this.extract_packet () =
+  member this.extract_packet_unchecksummed () =
     if this.solution = None then None
     else
       let raw_field_extracts =
-        [(*FIXME use this.extract_concatted_field_values for some fields?*)
          this.extract_field_value "source_port";
          this.extract_field_value "destination_port";
          this.extract_field_value "length";
@@ -138,6 +137,17 @@ type udp (pdu_in_bytes : uint32) =
       if Array.length bytes * 8 > int this.packet_size then
         failwith "Output packet size exceeded PDU size"
       Some bytes
+
+  override this.extract_packet () =
+    match this.extract_packet_unchecksummed () with
+    | None -> None
+    | Some bytes ->
+        (*FIXME add pseudoheader -- how to reference packet container?*)
+        (*FIXME ensure have even number of bytes -- padding*)
+        let b1, b2 = ipv4.ipv4.checksum bytes
+        Array.set bytes 7 b1
+        Array.set bytes 8 b2
+        Some bytes
 
   override this.pre_generate () =
     match this.encapsulated_packet with
