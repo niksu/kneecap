@@ -62,7 +62,7 @@ let main argv =
     ip.set(<@@ ipv4.total_length @@>, ip.packet_size / 8u)
     udpp.set(<@@ udp.length @@>, udpp.packet_size / 8u)
 
-(* FIXME adapting the more complex constraints
+(* FIXME bring back the example that involves more complex constraints:
     ip +==
       [(new ipv4(150u)).constrain
         <@ ipv4.version = 4 &&
@@ -92,6 +92,7 @@ let main argv =
     printfn "Added constraints. Generating packets next."
     let x = eth.assertion ()
 *)
+
 //    generate_timed_pcap_contents eth 10u (fun (p : packet) -> p.constrain_different())
 //    generate_pcap_contents eth 10u (fun (p : packet) -> ip.constrain_different_flex(<@@ ipv4.TTL @@>))
     generate_timed_pcap_contents eth 10u (fun (p : packet) -> ip.constrain_different_flex(<@@ ipv4.TTL @@>))
