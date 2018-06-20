@@ -42,7 +42,7 @@ let main argv =
 
 
     printfn "Adding constraints."
-    eth.constrain <@ ethernet.source_address = ethernet.mac_address "[1-5,10]:34:56:78:90:*" &&
+    eth.constrain <@ ethernet.source_address = ethernet.mac_address "46:[1-5,10]:56:78:90:*" &&
                      ethernet.ethertype = ethernet.ethertype_ipv4 @>
     <== ip.constrain <@@ ipv4.version = 4 &&
                          ipv4.source_address = ipv4.ipv4_address "10.10.10.[55-60]" &&
