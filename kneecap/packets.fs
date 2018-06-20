@@ -381,8 +381,18 @@ type address_carrier =
     abstract member address_interpretation : interpretation
   end
 
+
+type enclosing_packet_reference =
+  interface
+    abstract member parent : payload_carrier option ref
+  end
+
 let (<==) (p1 : payload_carrier) (p2 : payload_carrier) : payload_carrier =
   ignore(p1.encapsulate p2)
+  match p2 :> obj with
+  | :? enclosing_packet_reference ->
+    ((p2 :> obj) :?> enclosing_packet_reference).parent := Some p1
+  | _ -> ()
   p2
 
 let (<<==) (p1 : payload_carrier) (p2s : payload_carrier list) : payload_carrier =

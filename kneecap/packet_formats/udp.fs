@@ -69,6 +69,9 @@ type udp (pdu_in_bytes : uint32) =
   let field_Length_bv = ctxt.MkBVConst ("field_Length", field_Length_sz)
   let field_Checksum_bv = ctxt.MkBVConst ("field_Checksum", field_Checksum_sz)
 
+  interface enclosing_packet_reference with
+    member this.parent = ref None
+
   override this.extract_field_value (field : string) : byte[] option =
     (*FIXME DRY principle with extract_packet*)
     if this.solution = None then None
