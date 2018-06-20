@@ -268,7 +268,7 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
 
   (*Concat together the field values we extract from a solution to
     this packet's constraints.*)
-  override this.extract_packet () =
+  member this.extract_packet_unchecksummed () =
     if this.solution = None then None
     else
       let extracted_packet_fields =
@@ -292,6 +292,26 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
       if Array.length bytes * 8 > int this.packet_size then
         failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
       Some bytes
+
+  override this.extract_packet () =
+    match this.extract_packet_unchecksummed () with
+    | None -> None
+    | Some bytes ->
+        let frame_size = int32(header_sz + payload_sz) / 8
+        let frame =
+            Array.sub bytes 0 frame_size
+            |> bytes_to_boollist
+
+        let checksum =
+          crc32 frame 0u
+          |> System.BitConverter.GetBytes
+          |> process_bytes config.solver_is_big_endian false
+        assert(Array.length checksum = 4)
+        Array.set bytes frame_size checksum.[0]
+        Array.set bytes (frame_size + 1) checksum.[1]
+        Array.set bytes (frame_size + 2) checksum.[2]
+        Array.set bytes (frame_size + 3) checksum.[3]
+        Some bytes
 
   override this.extract_field_value (field : string) : byte[] option =
     (*FIXME DRY principle with extract_packet*)
