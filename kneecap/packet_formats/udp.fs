@@ -124,7 +124,7 @@ type udp (pdu_in_bytes : uint32) =
   member this.extract_packet_unchecksummed () =
     if this.solution = None then None
     else
-      let raw_field_extracts =
+      let raw_field_extracts = [
          this.extract_field_value "source_port";
          this.extract_field_value "destination_port";
          this.extract_field_value "length";
