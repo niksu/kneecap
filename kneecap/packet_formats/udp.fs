@@ -145,12 +145,33 @@ type udp (pdu_in_bytes : uint32) =
     match this.extract_packet_unchecksummed () with
     | None -> None
     | Some bytes ->
-        (*FIXME add pseudoheader -- how to reference packet container?*)
-        (*FIXME ensure have even number of bytes -- padding*)
-        let b1, b2 = ipv4.ipv4.checksum bytes
-        Array.set bytes 7 b1
-        Array.set bytes 8 b2
-        Some bytes
+        match !(this :> enclosing_packet_reference).parent with
+        | None ->
+            failwith "Cannot produce pseudoheader because the containing packet is not known"
+        | Some parent ->
+          let pseudoheader =
+            match parent with
+            | :? ipv4.ipv4 ->
+                let ipv4_parent : ipv4.ipv4 = parent :?> ipv4.ipv4
+                let parent_field field =
+                  ipv4_parent.extract_field_value field
+                  |> Option.get
+                let src_address = parent_field "source_address"
+                let destination_address = parent_field "destination_address"
+                let protocol = parent_field "protocol"
+                let payload_length =
+                  parent_field "payload"
+                  |> Array.length
+                  |> byte
+                  |> Array.create 2
+                let zeroes = Array.create 1 (byte 0)
+                Array.concat [src_address; destination_address; zeroes; protocol; payload_length]
+            | _ -> failwith "Not sure how to produce pseudoheader from the containing packet type"
+          (*FIXME ensure have even number of bytes -- padding*)
+          let b1, b2 = ipv4.ipv4.checksum bytes
+          Array.set bytes 7 b1
+          Array.set bytes 8 b2
+          Some bytes
 
   override this.pre_generate () =
     match this.encapsulated_packet with
