@@ -241,29 +241,41 @@ type ipv4 (pdu_in_bytes : uint32) =
   member this.extract_packet_unchecksummed () =
     if this.solution = None then None
     else
-      let raw_field_extracts =
-        [this.extract_concatted_field_values I(*FIXME*) ["version"; "internet_header_length"];
-         this.extract_concatted_field_values I(*FIXME*)["DSCP"; "ECN"];
-         this.extract_field_value "total_length";
-         this.extract_field_value "identification";
-         this.extract_concatted_field_values I(*FIXME*)["flags"; "fragment_offset"];
-         this.extract_field_value "TTL";
-         this.extract_field_value "protocol";
-         this.extract_field_value "header_checksum";
-         this.extract_field_value "source_address";
-         this.extract_field_value "destination_address";
-         this.extract_field_value "payload";
+      let raw_field_names =
+        [["version"; "internet_header_length"];
+         ["DSCP"; "ECN"];
+         ["total_length"];
+         ["identification"];
+         ["flags"; "fragment_offset"];
+         ["TTL"];
+         ["protocol"];
+         ["header_checksum"];
+         ["source_address"];
+         ["destination_address"];
+         ["payload"];
          ]
-      if List.exists (fun x -> x = None) raw_field_extracts then
-        (*FIXME maybe we should break if this happens*)
-        None
-      else
-        let bytes =
-          List.map Option.get raw_field_extracts
-          |> Array.concat
-        if Array.length bytes * 8 > int this.packet_size then
-          failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
-        Some bytes
+      let raw_field_extracts =
+        List.fold (fun st fields ->
+            match fields with
+            | [] -> failwith "Impossible"
+            | [field] -> (fields, this.extract_field_value field) :: st
+            | _ -> (fields, this.extract_concatted_field_values I(*FIXME*) fields) :: st
+        ) [] raw_field_names
+        |> List.rev
+      List.iter (fun (fieldnames, extract) ->
+        if extract = None then
+          let fieldnames_str : string = String.concat ", " fieldnames
+          failwith ("Model was found, but IPv4 field/s (" + fieldnames_str + ") turned up null")
+          (*FIXME replace "IPv4" with a reference to a const field in this class describing this protocol.*)
+        else ()
+      ) raw_field_extracts
+      let bytes =
+        List.map snd raw_field_extracts
+        |> List.map Option.get
+        |> Array.concat
+      if Array.length bytes * 8 > int this.packet_size then
+        failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
+      Some bytes
 
   static member checksum (bs : byte[]) : byte * byte =
       let rec pair_bytes xs acc =
