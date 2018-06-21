@@ -301,9 +301,26 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
         let frame =
             Array.sub bytes 0 frame_size
             |> bytes_to_boollist
+            |> List.rev
+        let padding =
+            let l = List.length frame % 32
+            if l = 0 then []
+            else
+              enumerate_j 1 l
+              |> List.map (fun _ -> false)
+        let preprocessed =
+            List.fold (fun (n, l) b ->
+                let n' = n + 1
+                if n < 32 then
+                    (n', not b :: l)
+                else
+                    (n', b :: l))
+              (0, []) (List.concat [frame; padding])
+            |> snd
+            |> List.rev
 
         let checksum =
-          crc32 frame 0u
+          crc32 preprocessed 0u
           |> System.BitConverter.GetBytes
           |> process_bytes config.solver_is_big_endian false
         assert(Array.length checksum = 4)
