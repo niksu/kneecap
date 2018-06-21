@@ -172,8 +172,15 @@ type udp (pdu_in_bytes : uint32) =
                 let zeroes = Array.create 1 (byte 0)
                 Array.concat [src_address; destination_address; zeroes; protocol; payload_length]
             | _ -> failwith "Not sure how to produce pseudoheader from the containing packet type"
-          (*FIXME ensure have even number of bytes -- padding*)
-          let b1, b2 = ipv4.ipv4.checksum bytes
+          let b1, b2 =
+            let to_checksum = Array.concat [pseudoheader; bytes]
+            let padded =
+              (*Ensure have even number of bytes -- padding*)
+              if Array.length to_checksum % 2 = 0 then
+                to_checksum
+              else
+                Array.concat [to_checksum; Array.create 1 (byte 0)]
+            ipv4.ipv4.checksum padded
           Array.set bytes 7 b1
           Array.set bytes 8 b2
           Some bytes
