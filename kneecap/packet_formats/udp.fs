@@ -81,7 +81,7 @@ type udp (pdu_in_bytes : uint32) =
     else
       (*We compute the CRC32 code after having obtained solutions for other fields*)
       match field with
-      | "header_checksum" ->
+      | "checksum" ->
          (*calculate based on existing fields in solution, if there is one;*)
          (*FIXME*)
          Some [|0uy; 0uy|]
