@@ -162,6 +162,7 @@ type udp (pdu_in_bytes : uint32) =
                 let src_address = parent_field "source_address"
                 let destination_address = parent_field "destination_address"
                 let protocol = parent_field "protocol"
+(*
                 let payload_length =
                   (*NOTE this would cause infinite loop because of circularity of reference between the ip and udp packets:
                   parent_field "payload"
@@ -169,6 +170,10 @@ type udp (pdu_in_bytes : uint32) =
                   pdu_in_bytes
                   |> uint16
                   |> System.BitConverter.GetBytes
+*)
+                let payload_length =
+                  this.extract_field_value "length"
+                  |> Option.get
                 let zeroes = Array.create 1 (byte 0)
                 Array.concat [src_address; destination_address; zeroes; protocol; payload_length]
             | _ -> failwith "Not sure how to produce pseudoheader from the containing packet type"
@@ -181,8 +186,8 @@ type udp (pdu_in_bytes : uint32) =
               else
                 Array.concat [to_checksum; Array.create 1 (byte 0)]
             ipv4.ipv4.checksum padded
-          Array.set bytes 7 b1
-          Array.set bytes 8 b2
+          Array.set bytes 6 b1
+          Array.set bytes 7 b2
           Some bytes
 
   override this.pre_generate () =
