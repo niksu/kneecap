@@ -384,14 +384,15 @@ type address_carrier =
 
 type enclosing_packet_reference =
   interface
-    abstract member parent : payload_carrier option ref
+    abstract member get_parent : unit -> payload_carrier option
+    abstract member set_parent : payload_carrier -> unit
   end
 
 let (<==) (p1 : payload_carrier) (p2 : payload_carrier) : payload_carrier =
   ignore(p1.encapsulate p2)
   match p2 :> obj with
   | :? enclosing_packet_reference ->
-    ((p2 :> obj) :?> enclosing_packet_reference).parent := Some p1
+    ((p2 :> obj) :?> enclosing_packet_reference).set_parent p1
   | _ -> ()
   p2
 

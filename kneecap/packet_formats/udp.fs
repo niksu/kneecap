@@ -69,8 +69,11 @@ type udp (pdu_in_bytes : uint32) =
   let field_Length_bv = ctxt.MkBVConst ("field_Length", field_Length_sz)
   let field_Checksum_bv = ctxt.MkBVConst ("field_Checksum", field_Checksum_sz)
 
+  let mutable parent : payload_carrier option = None
+
   interface enclosing_packet_reference with
-    member this.parent = ref None
+    member this.get_parent () = parent
+    member this.set_parent p = parent <- Some p
 
   override this.extract_field_value (field : string) : byte[] option =
     (*FIXME DRY principle with extract_packet*)
@@ -145,7 +148,7 @@ type udp (pdu_in_bytes : uint32) =
     match this.extract_packet_unchecksummed () with
     | None -> None
     | Some bytes ->
-        match !(this :> enclosing_packet_reference).parent with
+        match parent with
         | None ->
             failwith "Cannot produce pseudoheader because the containing packet is not known"
         | Some parent ->
@@ -160,10 +163,12 @@ type udp (pdu_in_bytes : uint32) =
                 let destination_address = parent_field "destination_address"
                 let protocol = parent_field "protocol"
                 let payload_length =
+                  (*NOTE this would cause infinite loop because of circularity of reference between the ip and udp packets:
                   parent_field "payload"
-                  |> Array.length
-                  |> byte
-                  |> Array.create 2
+                  |> Array.length*)
+                  pdu_in_bytes
+                  |> uint16
+                  |> System.BitConverter.GetBytes
                 let zeroes = Array.create 1 (byte 0)
                 Array.concat [src_address; destination_address; zeroes; protocol; payload_length]
             | _ -> failwith "Not sure how to produce pseudoheader from the containing packet type"
