@@ -31,7 +31,7 @@ let main argv =
     use opaqp = new opaque(30u)
     printfn "Payload size (bytes): %d" (opaqp.packet_size / 8u)
 
-    use udpp = new udp(8u + opaqp.packet_size / 8u)
+    use udpp = new udp(8u + opaqp.packet_size / 8u, true)
     printfn "udp packet size (bytes): %d" (udpp.packet_size / 8u)
 
     use ip = new ipv4(20u + udpp.packet_size / 8u)

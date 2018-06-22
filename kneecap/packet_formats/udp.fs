@@ -27,7 +27,7 @@ open ir_processing
 /// <param name="max_size">Maximum size (in bytes) of packets.</param>
 /// <param name="size_generator">Generates size (in bytes) of packets, within min_size and max_size inclusive.</param>
 /// <remarks>This is based on <see cref="ipv4">ipv4</see>.</remarks>
-type udp (pdu_in_bytes : uint32) =
+type udp (pdu_in_bytes : uint32, checksummed : bool(*FIXME unused: whether this UDP packet instance should be checksummed, since this can be optional*)) =
   inherit constrainable_payload_carrier ()
   do
     assert (pdu_in_bytes >= uint32 8)
@@ -162,15 +162,6 @@ type udp (pdu_in_bytes : uint32) =
                 let src_address = parent_field "source_address"
                 let destination_address = parent_field "destination_address"
                 let protocol = parent_field "protocol"
-(*
-                let payload_length =
-                  (*NOTE this would cause infinite loop because of circularity of reference between the ip and udp packets:
-                  parent_field "payload"
-                  |> Array.length*)
-                  pdu_in_bytes
-                  |> uint16
-                  |> System.BitConverter.GetBytes
-*)
                 let payload_length =
                   this.extract_field_value "length"
                   |> Option.get
