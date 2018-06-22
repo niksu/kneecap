@@ -334,9 +334,9 @@ type ipv4 (pdu_in_bytes : uint32) =
   static member DSCP (*: packet_constant*) = failwith "This value should not be evaluated by F#"
   static member ECN (*: packet_constant*) = failwith "This value should not be evaluated by F#"
   static member total_length : int (*: packet_constant*) = failwith "This value should not be evaluated by F#"
-  static member identification (*: packet_constant*) = failwith "This value should not be evaluated by F#"
+  static member identification : int (*: packet_constant*) = failwith "This value should not be evaluated by F#"
   static member flags (*: packet_constant*) = failwith "This value should not be evaluated by F#"
-  static member fragment_offset (*: packet_constant*) = failwith "This value should not be evaluated by F#"
+  static member fragment_offset :int (*: packet_constant*) = failwith "This value should not be evaluated by F#"
   static member TTL : int (*: packet_constant*) = failwith "This value should not be evaluated by F#"
 
   (*Would be nice to package all of these up under an enumerate type,
