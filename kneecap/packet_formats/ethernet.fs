@@ -297,9 +297,17 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
     match this.extract_packet_unchecksummed () with
     | None -> None
     | Some bytes ->
+(* FIXME disabled
         let frame_size = int32(header_sz + payload_sz) / 8
+        let padded_bytes =
+            (*In case the stated PDU is larger than what has been generated
+              FIXME not sure if this is a hack or is actually needed, but it's currently needed*)
+            if Array.length bytes < frame_size then
+              Array.concat [bytes; Array.create (frame_size - Array.length bytes) (byte 0)]
+            else
+              bytes
         let frame =
-            Array.sub bytes 0 frame_size
+            Array.sub padded_bytes 0 frame_size
             |> bytes_to_boollist
             |> List.rev
         let padding =
@@ -318,7 +326,6 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
               (0, []) (List.concat [frame; padding])
             |> snd
             |> List.rev
-
         let checksum =
           crc32 preprocessed 0u
           |> System.BitConverter.GetBytes
@@ -328,6 +335,7 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
         Array.set bytes (frame_size + 1) checksum.[1]
         Array.set bytes (frame_size + 2) checksum.[2]
         Array.set bytes (frame_size + 3) checksum.[3]
+*)
         Some bytes
 
   override this.extract_field_value (field : string) : byte[] option =
