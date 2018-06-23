@@ -34,10 +34,12 @@ let main argv =
     use udpp = new udp(8u + opaqp.packet_size / 8u, true)
     printfn "udp packet size (bytes): %d" (udpp.packet_size / 8u)
 
-    use ip = new ipv4(20u + udpp.packet_size / 8u)
+//    use ip = new ipv4(20u + udpp.packet_size / 8u)
+    use ip = new ipv4(400u)
     printfn "ipv4 packet size (bytes): %d" (ip.packet_size / 8u)
 
-    use eth = new ethernet(18u + ip.packet_size / 8u)
+//    use eth = new ethernet(18u + ip.packet_size / 8u)
+    use eth = new ethernet(430u)
     printfn "ethernet packet size (bytes): %d" (eth.packet_size / 8u)
 
 
@@ -50,10 +52,13 @@ let main argv =
                          ipv4.internet_header_length = 5 &&
                          ipv4.TTL > 5 && (*Limit number of valid solutions*)
                          ipv4.TTL < 7 &&
-                         (*ipv4.protocol = ipv4.protocol_ip_in_ip*)
-                         ipv4.protocol = ipv4.protocol_udp
+                         ipv4.identification = 0 &&
+                         ipv4.fragment_offset = 0 &&
+                         ipv4.protocol = ipv4.protocol_ip_in_ip
+                         (*ipv4.protocol = ipv4.protocol_udp*)
                          (*ipv4.source_address < ipv4.destination_address*)
                       @@>
+(*
     <== udpp.constrain <@@ udp.source_port = 4 (*&& FIXME broken
                            udp.destination_port <> udp.source_port*)
                         @@>
@@ -61,9 +66,9 @@ let main argv =
 
     ip.set(<@@ ipv4.total_length @@>, ip.packet_size / 8u)
     udpp.set(<@@ udp.length @@>, udpp.packet_size / 8u)
+*)
 
-(* FIXME bring back the example that involves more complex constraints:
-    ip +==
+    ip ..==
       [(new ipv4(150u)).constrain
         <@ ipv4.version = 4 &&
            ipv4.source_address = ipv4.ipv4_address "192.168.4.[55-60]" &&
@@ -71,12 +76,20 @@ let main argv =
            ipv4.internet_header_length = 5 &&
            ipv4.total_length = 150 &&
            ipv4.TTL = 7 &&
+           (ipv4.identification = 0 (*||
+            ipv4.identification = 1 ||
+            ipv4.identification = 2 ||
+            ipv4.identification = 3*)) &&
+           (ipv4.fragment_offset = 0 (*||
+            ipv4.fragment_offset = 1 ||
+            ipv4.fragment_offset = 2 ||
+            ipv4.fragment_offset = 3*)) &&
            ipv4.protocol = ipv4.protocol_etherip
          @>;
 
        (new etherip(100u)).constrain <@ etherip.version = 3 @>;
 
-       (new ethernet(80u)).constrain
+       (new ethernet(46u)).constrain
         <@ ethernet.source_address = ethernet.mac_address "00:11:22:33:44:55" &&
            ethernet.destination_address = ethernet.mac_address "13:24:35:46:57:68" &&
            ethernet.ethertype = ethernet.ethertype_arp @>;
@@ -91,11 +104,10 @@ let main argv =
 
     printfn "Added constraints. Generating packets next."
     let x = eth.assertion ()
-*)
 
-//    generate_timed_pcap_contents eth 10u (fun (p : packet) -> p.constrain_different())
+    generate_timed_pcap_contents eth 1000u (fun (p : packet) -> p.constrain_different())
 //    generate_pcap_contents eth 10u (fun (p : packet) -> ip.constrain_different_flex(<@@ ipv4.TTL @@>))
-    generate_timed_pcap_contents eth 10u (fun (p : packet) -> ip.constrain_different_flex(<@@ ipv4.TTL @@>))
+//    generate_timed_pcap_contents eth 10u (fun (p : packet) -> ip.constrain_different_flex(<@@ ipv4.TTL @@>))
     |> pcap.serialise_pcap @"stack_6_1000.pcap"
 
     printfn "%A" argv
