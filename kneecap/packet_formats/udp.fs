@@ -27,7 +27,7 @@ open ir_processing
 /// <param name="max_size">Maximum size (in bytes) of packets.</param>
 /// <param name="size_generator">Generates size (in bytes) of packets, within min_size and max_size inclusive.</param>
 /// <remarks>This is based on <see cref="ipv4">ipv4</see>.</remarks>
-type udp (pdu_in_bytes : uint32, checksummed : bool(*FIXME unused: whether this UDP packet instance should be checksummed, since this can be optional*)) =
+type udp (pdu_in_bytes : uint32, checksummed : bool) =
   inherit constrainable_payload_carrier ()
   do
     assert (pdu_in_bytes >= uint32 8)
@@ -145,41 +145,43 @@ type udp (pdu_in_bytes : uint32, checksummed : bool(*FIXME unused: whether this 
       Some bytes
 
   override this.extract_packet () =
-    match this.extract_packet_unchecksummed () with
-    | None -> None
-    | Some bytes ->
-        match parent with
-        | None ->
-            failwith "Cannot produce pseudoheader because the containing packet is not known"
-        | Some parent ->
-          let pseudoheader =
-            match parent with
-            | :? ipv4.ipv4 ->
-                let ipv4_parent : ipv4.ipv4 = parent :?> ipv4.ipv4
-                let parent_field field =
-                  ipv4_parent.extract_field_value field
-                  |> Option.get
-                let src_address = parent_field "source_address"
-                let destination_address = parent_field "destination_address"
-                let protocol = parent_field "protocol"
-                let payload_length =
-                  this.extract_field_value "length"
-                  |> Option.get
-                let zeroes = Array.create 1 (byte 0)
-                Array.concat [src_address; destination_address; zeroes; protocol; payload_length]
-            | _ -> failwith "Not sure how to produce pseudoheader from the containing packet type"
-          let b1, b2 =
-            let to_checksum = Array.concat [pseudoheader; bytes]
-            let padded =
-              (*Ensure have even number of bytes -- padding*)
-              if Array.length to_checksum % 2 = 0 then
-                to_checksum
-              else
-                Array.concat [to_checksum; Array.create 1 (byte 0)]
-            ipv4.ipv4.checksum padded
-          Array.set bytes 6 b1
-          Array.set bytes 7 b2
-          Some bytes
+    if checksummed then this.extract_packet_unchecksummed ()
+    else
+      match this.extract_packet_unchecksummed () with
+      | None -> None
+      | Some bytes ->
+          match parent with
+          | None ->
+              failwith "Cannot produce pseudoheader because the containing packet is not known"
+          | Some parent ->
+            let pseudoheader =
+              match parent with
+              | :? ipv4.ipv4 ->
+                  let ipv4_parent : ipv4.ipv4 = parent :?> ipv4.ipv4
+                  let parent_field field =
+                    ipv4_parent.extract_field_value field
+                    |> Option.get
+                  let src_address = parent_field "source_address"
+                  let destination_address = parent_field "destination_address"
+                  let protocol = parent_field "protocol"
+                  let payload_length =
+                    this.extract_field_value "length"
+                    |> Option.get
+                  let zeroes = Array.create 1 (byte 0)
+                  Array.concat [src_address; destination_address; zeroes; protocol; payload_length]
+              | _ -> failwith "Not sure how to produce pseudoheader from the containing packet type"
+            let b1, b2 =
+              let to_checksum = Array.concat [pseudoheader; bytes]
+              let padded =
+                (*Ensure have even number of bytes -- padding*)
+                if Array.length to_checksum % 2 = 0 then
+                  to_checksum
+                else
+                  Array.concat [to_checksum; Array.create 1 (byte 0)]
+              ipv4.ipv4.checksum padded
+            Array.set bytes 6 b1
+            Array.set bytes 7 b2
+            Some bytes
 
   override this.pre_generate () =
     match this.encapsulated_packet with
