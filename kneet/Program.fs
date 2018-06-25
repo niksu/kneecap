@@ -34,12 +34,18 @@ let main argv =
     use udpp = new udp(8u + opaqp.packet_size / 8u, true)
     printfn "udp packet size (bytes): %d" (udpp.packet_size / 8u)
 
-//    use ip = new ipv4(20u + udpp.packet_size / 8u)
+#if EXAMPLE2
+    use ip = new ipv4(20u + udpp.packet_size / 8u)
+#else
     use ip = new ipv4(400u)
+#endif
     printfn "ipv4 packet size (bytes): %d" (ip.packet_size / 8u)
 
-//    use eth = new ethernet(18u + ip.packet_size / 8u)
+#if EXAMPLE2
+    use eth = new ethernet(18u + ip.packet_size / 8u)
+#else
     use eth = new ethernet(430u)
+#endif
     printfn "ethernet packet size (bytes): %d" (eth.packet_size / 8u)
 
 
@@ -58,7 +64,7 @@ let main argv =
                          (*ipv4.protocol = ipv4.protocol_udp*)
                          (*ipv4.source_address < ipv4.destination_address*)
                       @@>
-(*
+#if EXAMPLE2
     <== udpp.constrain <@@ udp.source_port = 4 (*&& FIXME broken
                            udp.destination_port <> udp.source_port*)
                         @@>
@@ -66,7 +72,8 @@ let main argv =
 
     ip.set(<@@ ipv4.total_length @@>, ip.packet_size / 8u)
     udpp.set(<@@ udp.length @@>, udpp.packet_size / 8u)
-*)
+#else
+    |> ignore
 
     ip ..==
       [(new ipv4(150u)).constrain
@@ -101,13 +108,17 @@ let main argv =
            arp<ethernet, ipv4>.PLEN = 4 &&
            arp<ethernet, ipv4>.OPER = arp<ethernet, ipv4>.OPER_Reply
          @>]
+#endif
 
     printfn "Added constraints. Generating packets next."
     let x = eth.assertion ()
 
-    generate_timed_pcap_contents eth 1000u (fun (p : packet) -> p.constrain_different())
+#if EXAMPLE2
 //    generate_pcap_contents eth 10u (fun (p : packet) -> ip.constrain_different_flex(<@@ ipv4.TTL @@>))
-//    generate_timed_pcap_contents eth 10u (fun (p : packet) -> ip.constrain_different_flex(<@@ ipv4.TTL @@>))
+    generate_timed_pcap_contents eth 10u (fun (p : packet) -> ip.constrain_different_flex(<@@ ipv4.TTL @@>))
+#else
+    generate_timed_pcap_contents eth 1000u (fun (p : packet) -> p.constrain_different())
+#endif
     |> pcap.serialise_pcap @"stack_6_1000.pcap"
 
     printfn "%A" argv
