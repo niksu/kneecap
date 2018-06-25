@@ -27,17 +27,20 @@ controlling the backend solver
 
 let generate_packets (generator : packets.packet) (quantity : uint32) (f : packets.packet -> bool) : (uint32 * byte[]) list =
   general.enumerate (int quantity - 1)
-  |> List.fold (fun st i ->
-         if not (generator.generate ()) then
-           st
+  |> List.fold (fun (active, st) i ->
+         if not active || not (generator.generate ()) then
+           (false, st)
          else
-           let result = generator.extract_packet ()
-           if not (f generator) then
-             failwith "Failed to apply f constraint"
-           match result with
+           match generator.extract_packet () with
            | None -> failwith "Could not extract the generated packet"
-           | Some bytes -> (uint32 i, bytes) :: st)
-     []
+           | Some bytes ->
+               if not (f generator) then
+                 generator.solution <- None
+                 (false, st)
+               else
+                 (true, (uint32 i, bytes) :: st))
+     (true, [])
+  |> snd
   |> List.rev (*preserve order*)
 
 (*NOTE i assume that the generator has already been constrained*)

@@ -268,7 +268,7 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
 
   (*Concat together the field values we extract from a solution to
     this packet's constraints.*)
-  override this.extract_packet () =
+  member this.extract_packet_unchecksummed () =
     if this.solution = None then None
     else
       let extracted_packet_fields =
@@ -292,6 +292,51 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
       if Array.length bytes * 8 > int this.packet_size then
         failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
       Some bytes
+
+  override this.extract_packet () =
+    match this.extract_packet_unchecksummed () with
+    | None -> None
+    | Some bytes ->
+(* FIXME disabled
+        let frame_size = int32(header_sz + payload_sz) / 8
+        let padded_bytes =
+            (*In case the stated PDU is larger than what has been generated
+              FIXME not sure if this is a hack or is actually needed, but it's currently needed*)
+            if Array.length bytes < frame_size then
+              Array.concat [bytes; Array.create (frame_size - Array.length bytes) (byte 0)]
+            else
+              bytes
+        let frame =
+            Array.sub padded_bytes 0 frame_size
+            |> bytes_to_boollist
+            |> List.rev
+        let padding =
+            let l = List.length frame % 32
+            if l = 0 then []
+            else
+              enumerate_j 1 l
+              |> List.map (fun _ -> false)
+        let preprocessed =
+            List.fold (fun (n, l) b ->
+                let n' = n + 1
+                if n < 32 then
+                    (n', not b :: l)
+                else
+                    (n', b :: l))
+              (0, []) (List.concat [frame; padding])
+            |> snd
+            |> List.rev
+        let checksum =
+          crc32 preprocessed 0u
+          |> System.BitConverter.GetBytes
+          |> process_bytes config.solver_is_big_endian false
+        assert(Array.length checksum = 4)
+        Array.set bytes frame_size checksum.[0]
+        Array.set bytes (frame_size + 1) checksum.[1]
+        Array.set bytes (frame_size + 2) checksum.[2]
+        Array.set bytes (frame_size + 3) checksum.[3]
+*)
+        Some bytes
 
   override this.extract_field_value (field : string) : byte[] option =
     (*FIXME DRY principle with extract_packet*)
@@ -323,8 +368,10 @@ type ethernet (pdu_in_bytes : uint32) = (*pdu is expressed in bytes*)
             pckt.extract_packet ()
       | _ -> base.extract_field_value field
 
-  (*FIXME obtain value for payload from encapsulated packets*)
-  override this.pre_generate () = true
+  override this.pre_generate () =
+    match this.encapsulated_packet with
+    | None -> true
+    | Some pckt -> pckt.generate ()
 
   (*Coercion placeholder from strings into an IP address*)
   static member mac_address _ (*: packet_constant*) = failwith "This value should not be evaluated by F#"

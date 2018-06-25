@@ -72,15 +72,16 @@ type packet () =
       this step could involve recursively obtaining payload values from
       encapsulated packets.*)
     if not (this.pre_generate ()) then
-      failwith "pre_generate() failed -- consequently generate() has been aborted"
-
-    let (mdl_opt, result) =
-      match slv.Check () with
-      | Status.SATISFIABLE -> Some slv.Model, true
-      | Status.UNSATISFIABLE -> None, false
-      | _ -> failwith "Received unknown result from the solver"
-    model <- mdl_opt
-    result
+      // pre_generate() failed -- consequently generate() has been aborted
+      false
+    else
+      let (mdl_opt, result) =
+        match slv.Check () with
+        | Status.SATISFIABLE -> Some slv.Model, true
+        | Status.UNSATISFIABLE -> None, false
+        | _ -> failwith "Received unknown result from the solver"
+      model <- mdl_opt
+      result
 
   member this.context = ctxt
   member this.solver = slv
@@ -250,12 +251,6 @@ type constrainable_payload_carrier () =
 
   (*Reset constraints*)
   member this.unconstrain () = _constraint <- true
-  (*Map the name of a field to the BV that is created for it.*)
-  member this.name_to_field (s : string) : BitVecExpr =
-    let r = lookup_dc s this.distinguished_constants
-    match r.typ with
-    | Field (bv, _) -> bv
-    | _ -> failwith ("Expected " + s + " to resolve to a field, but it doesn't")
 
   (*Bind a name -- this will associating a name (presented as a string) with
     a protocol field. The scope of the name extends across all protocols in lower
@@ -338,6 +333,32 @@ type constrainable_payload_carrier () =
     this.solver.Assert (this.context.MkAnd (translated_constraint, aux_constraint))
     this
 
+  (*Map the name of a field to the BV that is created for it.*)
+  member this.name_to_field (s : string) : BitVecExpr =
+    let r = lookup_dc s (*this.distinguished_constants*) this.distinguish_constants_closure
+    match r.typ with
+    | Field (bv, _) -> bv
+    | _ -> failwith ("Expected " + s + " to resolve to a field, but it doesn't")
+
+  (*Like constrain_different but can constrain to specific fields.*)
+  member this.constrain_different_flex (expr : Quotations.Expr) : bool = (* FIXME sucky name; code needs cleaning*)
+      match base.solution with
+      | None -> false
+      | Some mdl ->
+        let field_str = name_from_expr expr (*FIXME i implicitly assume that expr contains a single field name*)
+        let field_bv = this.name_to_field field_str
+        let w = extract_raw_witness mdl field_bv
+        this.solver.Assert (this.context.MkNot (this.context.MkEq (field_bv, w)))
+        true
+
+  (*Constrain "expr" to be "value".*)
+  member this.set (expr : Quotations.Expr, value : uint32) : unit =
+    let field_str = name_from_expr expr
+    let translated_constraint, aux_constraint =
+      fsexpr_to_cexp [Operator Oeq; Operand_Arit (ValI (int(value))); Operand_Arit (Const {idx = None; name = Some field_str; foreign = false})]
+      |> annotate_bv_widths this.distinguish_constants_closure
+      |> cexp_to_BoolExpr this.context this.distinguish_constants_closure
+    this.solver.Assert (this.context.MkAnd (translated_constraint, aux_constraint))
 
 (*FIXME every time we iterate, and get a new model, will we need to garbage collect names from the context? can we use Push and Pop to help Z3 with this (i think it uses reference counting)*)
 
@@ -360,11 +381,28 @@ type address_carrier =
     abstract member address_interpretation : interpretation
   end
 
-let (<==) (p1 : payload_carrier) (p2 : payload_carrier) : payload_carrier = p1.encapsulate p2
 
-let (+==) (p1 : payload_carrier) (p2s : payload_carrier list) =
+type enclosing_packet_reference =
+  interface
+    abstract member get_parent : unit -> payload_carrier option
+    abstract member set_parent : payload_carrier -> unit
+  end
+
+let (<==) (p1 : payload_carrier) (p2 : payload_carrier) : payload_carrier =
+  ignore(p1.encapsulate p2)
+  match p2 :> obj with
+  | :? enclosing_packet_reference ->
+    ((p2 :> obj) :?> enclosing_packet_reference).set_parent p1
+  | _ -> ()
+  p2
+
+let (<<==) (p1 : payload_carrier) (p2s : payload_carrier list) : payload_carrier =
   List.fold (fun (acc : payload_carrier) (p : payload_carrier) ->
     ignore(acc <== p)
     p) p1 p2s
-    |> ignore
-  ()
+
+let (.==) (p1 : payload_carrier) (p2 : payload_carrier) : unit =
+  ignore(p1 <== p2)
+
+let (..==) (p1 : payload_carrier) (p2s : payload_carrier list) : unit =
+  ignore(p1 <<== p2s)

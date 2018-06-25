@@ -238,34 +238,77 @@ type ipv4 (pdu_in_bytes : uint32) =
 
   (*Concat together the field values we extract from a solution to
     this packet's constraints.*)
-  override this.extract_packet () =
+  member this.extract_packet_unchecksummed () =
     if this.solution = None then None
     else
-      let raw_field_extracts =
-        [this.extract_concatted_field_values I(*FIXME*) ["version"; "internet_header_length"];
-         this.extract_concatted_field_values I(*FIXME*)["DSCP"; "ECN"];
-         this.extract_field_value "total_length";
-         this.extract_field_value "identification";
-         this.extract_concatted_field_values I(*FIXME*)["flags"; "fragment_offset"];
-         this.extract_field_value "TTL";
-         this.extract_field_value "protocol";
-         this.extract_field_value "header_checksum";
-         this.extract_field_value "source_address";
-         this.extract_field_value "destination_address";
-         this.extract_field_value "payload";
+      let raw_field_names =
+        [["version"; "internet_header_length"];
+         ["DSCP"; "ECN"];
+         ["total_length"];
+         ["identification"];
+         ["flags"; "fragment_offset"];
+         ["TTL"];
+         ["protocol"];
+         ["header_checksum"];
+         ["source_address"];
+         ["destination_address"];
+         ["payload"];
          ]
-      if List.exists (fun x -> x = None) raw_field_extracts then
-        None
-      else
-        let bytes =
-          List.map Option.get raw_field_extracts
-          |> Array.concat
-        if Array.length bytes * 8 > int this.packet_size then
-          failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
+      let raw_field_extracts =
+        List.fold (fun st fields ->
+            match fields with
+            | [] -> failwith "Impossible"
+            | [field] -> (fields, this.extract_field_value field) :: st
+            | _ -> (fields, this.extract_concatted_field_values I(*FIXME*) fields) :: st
+        ) [] raw_field_names
+        |> List.rev
+      List.iter (fun (fieldnames, extract) ->
+        if extract = None then
+          let fieldnames_str : string = String.concat ", " fieldnames
+          failwith ("Model was found, but IPv4 field/s (" + fieldnames_str + ") turned up null")
+          (*FIXME replace "IPv4" with a reference to a const field in this class describing this protocol.*)
+        else ()
+      ) raw_field_extracts
+      let bytes =
+        List.map snd raw_field_extracts
+        |> List.map Option.get
+        |> Array.concat
+      if Array.length bytes * 8 > int this.packet_size then
+        failwith ("Output packet size (" + string(Array.length bytes * 8) + ") exceeded PDU size (" + string(this.packet_size) + ")")
+      Some bytes
+
+  static member checksum (bs : byte[]) : byte * byte =
+      let rec pair_bytes xs acc =
+        match xs with
+        | [] -> List.rev acc
+        | [_] -> failwith "Odd number of bytes cannot be processed by checksum"
+        | b1 :: b2 :: rest ->
+            pair_bytes rest ((b1, b2) :: acc)
+      let byte_pairs =
+        pair_bytes (List.ofArray bs) []
+        |> List.map (fun (b1, b2) ->
+          (uint16(b1) <<< 8) + uint16(b2))
+      let sum = List.fold (fun (st : uint32) (x : uint16) ->
+          st + uint32(x)) 0u byte_pairs
+      let added_carry : uint16 =
+          let carry : uint32 = 0x000F0000u &&& sum
+          uint16((0x0000FFFFu &&& sum) + carry)
+      let result = ~~~ added_carry
+      byte(result >>> 8), byte(result)
+
+  override this.extract_packet () =
+    match this.extract_packet_unchecksummed () with
+    | None -> None
+    | Some bytes ->
+        let b1, b2 = ipv4.checksum (Array.sub bytes 0 (int32(header_sz) / 8))
+        Array.set bytes 10 b1
+        Array.set bytes 11 b2
         Some bytes
 
-  (*FIXME obtain value for payload from encapsulated packets*)
-  override this.pre_generate () = true
+  override this.pre_generate () =
+    match this.encapsulated_packet with
+    | None -> true
+    | Some pckt -> pckt.generate ()
 
   (*Coercion placeholder from strings into an IP address*)
   static member ipv4_address _ (*: packet_constant *)= failwith "This value should not be evaluated by F#"
@@ -291,9 +334,9 @@ type ipv4 (pdu_in_bytes : uint32) =
   static member DSCP (*: packet_constant*) = failwith "This value should not be evaluated by F#"
   static member ECN (*: packet_constant*) = failwith "This value should not be evaluated by F#"
   static member total_length : int (*: packet_constant*) = failwith "This value should not be evaluated by F#"
-  static member identification (*: packet_constant*) = failwith "This value should not be evaluated by F#"
+  static member identification : int (*: packet_constant*) = failwith "This value should not be evaluated by F#"
   static member flags (*: packet_constant*) = failwith "This value should not be evaluated by F#"
-  static member fragment_offset (*: packet_constant*) = failwith "This value should not be evaluated by F#"
+  static member fragment_offset :int (*: packet_constant*) = failwith "This value should not be evaluated by F#"
   static member TTL : int (*: packet_constant*) = failwith "This value should not be evaluated by F#"
 
   (*Would be nice to package all of these up under an enumerate type,

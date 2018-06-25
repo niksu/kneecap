@@ -27,10 +27,10 @@ open ir_processing
 /// <param name="max_size">Maximum size (in bytes) of packets.</param>
 /// <param name="size_generator">Generates size (in bytes) of packets, within min_size and max_size inclusive.</param>
 /// <remarks>This is based on <see cref="ipv4">ipv4</see>.</remarks>
-type udp (pdu_in_bytes : uint32) =
+type udp (pdu_in_bytes : uint32, checksummed : bool) =
   inherit constrainable_payload_carrier ()
   do
-    assert (pdu_in_bytes >= uint32 20)
+    assert (pdu_in_bytes >= uint32 8)
   let ctxt = base.context
   let slv = base.solver
 
@@ -69,13 +69,19 @@ type udp (pdu_in_bytes : uint32) =
   let field_Length_bv = ctxt.MkBVConst ("field_Length", field_Length_sz)
   let field_Checksum_bv = ctxt.MkBVConst ("field_Checksum", field_Checksum_sz)
 
+  let mutable parent : payload_carrier option = None
+
+  interface enclosing_packet_reference with
+    member this.get_parent () = parent
+    member this.set_parent p = parent <- Some p
+
   override this.extract_field_value (field : string) : byte[] option =
     (*FIXME DRY principle with extract_packet*)
     if this.solution = None then None
     else
       (*We compute the CRC32 code after having obtained solutions for other fields*)
       match field with
-      | "header_checksum" ->
+      | "checksum" ->
          (*calculate based on existing fields in solution, if there is one;*)
          (*FIXME*)
          Some [|0uy; 0uy|]
@@ -121,15 +127,15 @@ type udp (pdu_in_bytes : uint32) =
 
   (*Concat together the field values we extract from a solution to
     this packet's constraints.*)
-  override this.extract_packet () =
+  member this.extract_packet_unchecksummed () =
     if this.solution = None then None
     else
-      let raw_field_extracts =
-        [(*FIXME use this.extract_concatted_field_values for some fields?*)
+      let raw_field_extracts = [
          this.extract_field_value "source_port";
          this.extract_field_value "destination_port";
          this.extract_field_value "length";
          this.extract_field_value "checksum";
+         this.extract_field_value "payload";
          ]
       let bytes =
         List.map Option.get raw_field_extracts
@@ -138,8 +144,49 @@ type udp (pdu_in_bytes : uint32) =
         failwith "Output packet size exceeded PDU size"
       Some bytes
 
-  (*FIXME obtain value for payload from encapsulated packets*)
-  override this.pre_generate () = true
+  override this.extract_packet () =
+    if checksummed then this.extract_packet_unchecksummed ()
+    else
+      match this.extract_packet_unchecksummed () with
+      | None -> None
+      | Some bytes ->
+          match parent with
+          | None ->
+              failwith "Cannot produce pseudoheader because the containing packet is not known"
+          | Some parent ->
+            let pseudoheader =
+              match parent with
+              | :? ipv4.ipv4 ->
+                  let ipv4_parent : ipv4.ipv4 = parent :?> ipv4.ipv4
+                  let parent_field field =
+                    ipv4_parent.extract_field_value field
+                    |> Option.get
+                  let src_address = parent_field "source_address"
+                  let destination_address = parent_field "destination_address"
+                  let protocol = parent_field "protocol"
+                  let payload_length =
+                    this.extract_field_value "length"
+                    |> Option.get
+                  let zeroes = Array.create 1 (byte 0)
+                  Array.concat [src_address; destination_address; zeroes; protocol; payload_length]
+              | _ -> failwith "Not sure how to produce pseudoheader from the containing packet type"
+            let b1, b2 =
+              let to_checksum = Array.concat [pseudoheader; bytes]
+              let padded =
+                (*Ensure have even number of bytes -- padding*)
+                if Array.length to_checksum % 2 = 0 then
+                  to_checksum
+                else
+                  Array.concat [to_checksum; Array.create 1 (byte 0)]
+              ipv4.ipv4.checksum padded
+            Array.set bytes 6 b1
+            Array.set bytes 7 b2
+            Some bytes
+
+  override this.pre_generate () =
+    match this.encapsulated_packet with
+    | None -> true
+    | Some pckt -> pckt.generate ()
 
   (*Placeholder for packet fields*)
   static member payload (*: packet_constant*) = failwith "This value should not be evaluated by F#"
